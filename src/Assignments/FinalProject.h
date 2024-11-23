@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Assignment.h"
+#include "Scenes/SceneFactory.h"
 
 class FinalProject : public Assignment {
 public:
@@ -15,4 +16,8 @@ public:
 	virtual void renderUI();
 
 	virtual ptr_vector<AnimationObject> getObjects();
+private:
+    std::unique_ptr<Scene> currentScene;
+    SceneType currentSceneType;
+    double lastFrameChange;
 };
