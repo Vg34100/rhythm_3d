@@ -70,6 +70,7 @@ void FinalProject::render(const mat4& projection, const mat4& view, s_ptr<Frameb
 void FinalProject::renderUI() {
     if (ImGui::CollapsingHeader("Scene Selection")) {
         static const char* scenes[] = {
+            // TODO: Add new Scenes here to select
             "Single Cube",
         };
 
