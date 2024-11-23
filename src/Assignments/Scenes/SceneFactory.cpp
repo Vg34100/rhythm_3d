@@ -1,6 +1,7 @@
 #include "SceneFactory.h"
 #include "SingleCubeScene.h"
 #include "SingleSphereScene.h"
+#include "PianoScene.h"
 
 std::unique_ptr<Scene> createScene(SceneType type) {
     switch (type) {
@@ -9,6 +10,8 @@ std::unique_ptr<Scene> createScene(SceneType type) {
             return std::make_unique<SingleCubeScene>();
         case SceneType::SingleSphere:
             return std::make_unique<SingleSphereScene>();
+        case SceneType::Piano:
+            return std::make_unique<PianoScene>();
         default:
             return nullptr;
     }

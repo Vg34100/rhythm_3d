@@ -133,7 +133,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)\..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenGL32.lib;glfw3.lib;glew32s.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenGL32.lib;ole32.lib
+
+;glfw3.lib;glew32s.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -201,6 +203,9 @@
     <ClInclude Include="..\src\Assignments\Lab11.h" />
     <ClInclude Include="..\src\Assignments\ParticleSystemDemo.h" />
     <ClInclude Include="..\src\Assignments\ProceduralDemos.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\AudioSystem.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\miniaudio.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\PianoScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\Scene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SceneFactory.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SingleCubeScene.h" />
@@ -224,6 +229,8 @@
     <ClCompile Include="..\src\Assignments\Lab11.cpp" />
     <ClCompile Include="..\src\Assignments\ParticleSystemDemo.cpp" />
     <ClCompile Include="..\src\Assignments\ProceduralDemos.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\AudioSystem.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\PianoScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SceneFactory.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleCubeScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleSphereScene.cpp" />
