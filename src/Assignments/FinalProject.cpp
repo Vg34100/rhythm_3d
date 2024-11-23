@@ -16,6 +16,7 @@
 #include <glm/gtc/random.hpp>
 
 #include "implot.h"
+#include "Scenes/SceneFactory.h"
 
 
 // Variables for Final Project
@@ -41,58 +42,59 @@ namespace cmps_4480_final_project {
 }
 
 void FinalProject::init() {
-	assert(yourName != nullptr);
-
-	ground = AnimationObject(AnimationObjectType::quad, vec3(0.f, -0.01f, 0.f), vec3(0.f, 0.f, 90.f), vec3(250), nullptr, vec4(vec3(0.5f), 1.f));
-	ground.cullFace = true;
-	
-	initialized = true;
+    currentSceneType = SceneType::SingleCube;
+    currentScene = createScene(currentSceneType);
+    currentScene->init();
+    lastFrameChange = getTime();
 }
 
 void FinalProject::update() {
-	if (!initialized) init();
+	if (!currentScene) init();
 
+    double now = getTime();
+    float dt = static_cast<float>(now - lastFrameChange);
+    lastFrameChange = now;
+
+    if (currentScene) {
+        currentScene->update(now, dt);
+    }
 }
 
 void FinalProject::render(const mat4& projection, const mat4& view, s_ptr<Framebuffer> framebuffer, bool isShadow) {
-
-	auto& jr = AnimationObjectRenderer::get();
-	// Render ground
-	jr.beginBatchRender(ground.shapeType, false, vec4(1.f), isShadow);
-
-	if (!isShadow) {
-		GPU::Lighting::get().bind(jr.currentMesh->shader);
-		if (ground.cullFace)
-		{
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_BACK);
-		}
-		else {
-			glDisable(GL_CULL_FACE);
-		}
-	}
-
-	if (isShadow) {
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
-	}
-
-	ground.updateMatrix(true);
-	jr.renderBatchWithOwnColor(ground, isShadow);
-	jr.endBatchRender(isShadow);
+    if (currentScene) {
+        currentScene->render(projection, view, isShadow);
+    }
 }
 
 // Renders the UI controls for the lab.
 void FinalProject::renderUI() {
+    if (ImGui::CollapsingHeader("Scene Selection")) {
+        static const char* scenes[] = {
+            // TODO: Add new Scenes here to select
+            "Single Cube",
+            "Single Sphere"
+        };
 
-	if (ImGui::CollapsingHeader("Ground")) {
-		ground.renderUI();
-	}
+        int currentItem = static_cast<int>(currentSceneType);
+        if (ImGui::Combo("Current Scene", &currentItem, scenes, IM_ARRAYSIZE(scenes))) {
+            SceneType newSceneType = static_cast<SceneType>(currentItem);
+            if (newSceneType != currentSceneType) {
+                currentScene.reset();
+                currentScene = createScene(newSceneType);
+                currentScene->init();
+                currentSceneType = newSceneType;
+            }
+        }
+    }
+
+    if (currentScene) {
+        currentScene->renderUI();
+    }
 }
 
 ptr_vector<AnimationObject> FinalProject::getObjects() {
-	// Add pointers to objects in this function if you want to be able to select/move them using the mouse
-	// and keyboard shortcuts. 
-	ptr_vector<AnimationObject> object_ptrs = { &ground };
-	return object_ptrs;
+    if (currentScene) {
+        return currentScene->getObjects();
+    }
+    return {};
 }

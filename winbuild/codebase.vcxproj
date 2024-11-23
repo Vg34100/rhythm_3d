@@ -201,6 +201,10 @@
     <ClInclude Include="..\src\Assignments\Lab11.h" />
     <ClInclude Include="..\src\Assignments\ParticleSystemDemo.h" />
     <ClInclude Include="..\src\Assignments\ProceduralDemos.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\Scene.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\SceneFactory.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\SingleCubeScene.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\SingleSphereScene.h" />
     <ClInclude Include="..\src\Tools\CameraTool.h" />
     <ClInclude Include="..\src\Tools\SelectTool.h" />
     <ClInclude Include="..\src\Tools\TransformTool.h" />
@@ -220,6 +224,9 @@
     <ClCompile Include="..\src\Assignments\Lab11.cpp" />
     <ClCompile Include="..\src\Assignments\ParticleSystemDemo.cpp" />
     <ClCompile Include="..\src\Assignments\ProceduralDemos.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\SceneFactory.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\SingleCubeScene.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\SingleSphereScene.cpp" />
     <ClCompile Include="..\src\Camera.cpp" />
     <ClCompile Include="..\src\Framebuffer.cpp" />
     <ClCompile Include="..\src\GLTFImporter.cpp" />
