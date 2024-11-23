@@ -38,8 +38,12 @@ void PianoScene::update(double now, float dt) {
             audio.stopNote(i);
         }
 
+
+     
         keys[i].updateMatrix(true);
     }
+    audio.update();
+
 }
 
 void PianoScene::render(const mat4& projection, const mat4& view, bool isShadow) {

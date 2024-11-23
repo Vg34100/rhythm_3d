@@ -4,6 +4,7 @@
 #include <mmsystem.h>
 #include <cmath>
 #include <array>
+#include <algorithm>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -22,22 +23,36 @@ public:
 
 private:
     AudioSystem();
-    static const int SAMPLE_RATE = 44100;
-    static const int BUFFER_SIZE = 4096;
-    static const int NUM_BUFFERS = 2;
+    // Increased sample rate and buffer size for better quality
+    static const int SAMPLE_RATE = 44100;    // Back to 44.1kHz
+    static const int BUFFER_SIZE = 2048;     // Smaller buffer for less latency
+    static const int NUM_BUFFERS = 4;        // More buffers for stability
     static const int NUM_CHANNELS = 1;
 
-    std::vector<float> frequencies = {
-        261.63f,  // C4
-        293.66f,  // D4
-        329.63f,  // E4
-        349.23f   // F4
+    struct Note {
+        float frequency;
+        bool isPlaying;
+        float phase;
+        float velocity;    // For envelope
+        float envelope;    // Current envelope value
+        float fadeTarget;  // Target for smooth transitions
     };
 
-    std::vector<bool> activeNotes;
-    std::vector<float> phases;
+    std::vector<Note> notes = {
+        {261.63f, false, 0.0f, 0.0f, 0.0f, 0.0f},  // C4
+        {293.66f, false, 0.0f, 0.0f, 0.0f, 0.0f},  // D4
+        {329.63f, false, 0.0f, 0.0f, 0.0f, 0.0f},  // E4
+        {349.23f, false, 0.0f, 0.0f, 0.0f, 0.0f}   // F4
+    };
+
     const float PI = 3.14159265358979323846f;
-    const float amplitude = 0.2f;
+    const float BASE_AMPLITUDE = 0.3f;       // Increased amplitude
+
+    // Envelope parameters
+    const float ATTACK_RATE = 0.3f;         // Faster attack
+    const float RELEASE_RATE = 0.5f;       // Faster release
+    const float SMOOTHING_FACTOR = 0.9f;    // Less smoothing for more immediate response
+
 
     HWAVEOUT hWaveOut;
     std::array<WAVEHDR, NUM_BUFFERS> waveHeaders;
@@ -45,6 +60,12 @@ private:
     int currentBuffer;
     bool isInitialized;
 
+    // Anti-aliasing state
+    float lastSample;
+    float filterState;
+
     void generateAudio(short* buffer, int numSamples);
     static void CALLBACK waveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2);
+    float antiAliasFilter(float input);
+    float softClip(float input);
 };

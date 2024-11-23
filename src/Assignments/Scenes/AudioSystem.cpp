@@ -2,10 +2,10 @@
 #include <algorithm>
 
 AudioSystem::AudioSystem()
-    : activeNotes(frequencies.size(), false)
-    , phases(frequencies.size(), 0.0f)
-    , currentBuffer(0)
-    , isInitialized(false) {
+    : currentBuffer(0)
+    , isInitialized(false)
+    , lastSample(0.0f)
+    , filterState(0.0f) {
     init();
 }
 
@@ -34,7 +34,7 @@ void AudioSystem::init() {
         return;
     }
 
-    // Initialize audio buffers
+    // Initialize and immediately queue all buffers
     for (int i = 0; i < NUM_BUFFERS; i++) {
         audioBuffers[i].resize(BUFFER_SIZE);
         waveHeaders[i].lpData = (LPSTR)audioBuffers[i].data();
@@ -42,59 +42,98 @@ void AudioSystem::init() {
         waveHeaders[i].dwFlags = 0;
         waveHeaders[i].dwLoops = 0;
 
-        waveOutPrepareHeader(hWaveOut, &waveHeaders[i], sizeof(WAVEHDR));
+        if (waveOutPrepareHeader(hWaveOut, &waveHeaders[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+            // Handle error
+            continue;
+        }
+
+        // Generate initial silent buffer
+        generateAudio((short*)waveHeaders[i].lpData, BUFFER_SIZE);
+        if (waveOutWrite(hWaveOut, &waveHeaders[i], sizeof(WAVEHDR)) != MMSYSERR_NOERROR) {
+            // Handle error
+            continue;
+        }
     }
 
     isInitialized = true;
+}
 
-    // Start playing
-    update();
+float AudioSystem::antiAliasFilter(float input) {
+    // Simple one-pole lowpass filter
+    filterState = filterState * SMOOTHING_FACTOR + input * (1.0f - SMOOTHING_FACTOR);
+    return filterState;
+}
+
+float AudioSystem::softClip(float input) {
+    // Soft clipping to reduce harsh distortion
+    if (input > 1.0f) return 1.0f - expf(-input);
+    if (input < -1.0f) return -1.0f + expf(input);
+    return input;
 }
 
 void AudioSystem::generateAudio(short* buffer, int numSamples) {
-    std::vector<float> tempBuffer(numSamples, 0.0f);
+    std::vector<float> mixBuffer(numSamples, 0.0f);
 
-    // Mix all active frequencies
-    for (size_t i = 0; i < frequencies.size(); i++) {
-        if (activeNotes[i]) {
-            float frequency = frequencies[i];
-            for (int j = 0; j < numSamples; j++) {
-                tempBuffer[j] += amplitude * std::sin(phases[i]);
-                phases[i] += 2.0f * PI * frequency / SAMPLE_RATE;
-                if (phases[i] > 2.0f * PI) {
-                    phases[i] -= 2.0f * PI;
+    bool anyNotePlaying = false;
+    for (auto& note : notes) {
+        if (note.isPlaying) {
+            anyNotePlaying = true;
+            note.envelope = (std::min)(1.0f, note.envelope + ATTACK_RATE);
+        }
+        else {
+            note.envelope = (std::max)(0.0f, note.envelope - RELEASE_RATE);
+        }
+
+        if (note.envelope > 0.0f) {
+            for (int i = 0; i < numSamples; i++) {
+                float sample = std::sin(note.phase) * note.envelope * BASE_AMPLITUDE;
+                note.phase += 2.0f * PI * note.frequency / SAMPLE_RATE;
+                if (note.phase > 2.0f * PI) {
+                    note.phase -= 2.0f * PI;
                 }
+                mixBuffer[i] += sample;
             }
         }
     }
 
-    // Convert to 16-bit PCM
+    // If no notes are playing, fill with silence
+    if (!anyNotePlaying) {
+        std::memset(buffer, 0, numSamples * sizeof(short));
+        return;
+    }
+
     for (int i = 0; i < numSamples; i++) {
-        buffer[i] = static_cast<short>(tempBuffer[i] * 32767.0f);
+        float sample = softClip(mixBuffer[i]);
+        buffer[i] = static_cast<short>(sample * 32767.0f);
     }
 }
 
 void AudioSystem::playNote(int noteIndex) {
-    if (noteIndex >= 0 && noteIndex < frequencies.size()) {
-        activeNotes[noteIndex] = true;
+    if (noteIndex >= 0 && noteIndex < notes.size()) {
+        notes[noteIndex].isPlaying = true;
+        // Don't reset phase to maintain continuity
+        notes[noteIndex].velocity = 1.0f;
     }
 }
 
 void AudioSystem::stopNote(int noteIndex) {
-    if (noteIndex >= 0 && noteIndex < frequencies.size()) {
-        activeNotes[noteIndex] = false;
+    if (noteIndex >= 0 && noteIndex < notes.size()) {
+        notes[noteIndex].isPlaying = false;
+        // Let the envelope handle the fade out
     }
 }
+
 
 void AudioSystem::update() {
     if (!isInitialized) return;
 
-    WAVEHDR* header = &waveHeaders[currentBuffer];
-
-    if ((header->dwFlags & WHDR_DONE) || !(header->dwFlags & WHDR_INQUEUE)) {
-        generateAudio((short*)header->lpData, BUFFER_SIZE);
-        waveOutWrite(hWaveOut, header, sizeof(WAVEHDR));
-        currentBuffer = (currentBuffer + 1) % NUM_BUFFERS;
+    // Check all buffers
+    for (int i = 0; i < NUM_BUFFERS; i++) {
+        WAVEHDR* header = &waveHeaders[i];
+        if ((header->dwFlags & WHDR_DONE) && !(header->dwFlags & WHDR_INQUEUE)) {
+            generateAudio((short*)header->lpData, BUFFER_SIZE);
+            waveOutWrite(hWaveOut, header, sizeof(WAVEHDR));
+        }
     }
 }
 
