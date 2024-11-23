@@ -30,6 +30,9 @@
     <Filter Include="Source Files\Tools">
       <UniqueIdentifier>{8a68e3a6-df25-4c15-8822-db7cf265f0f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Assignments\Scenes">
+      <UniqueIdentifier>{5e431012-ec65-4b41-82aa-3600c52c1284}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\headers\Application.h">
@@ -166,6 +169,15 @@
     </ClInclude>
     <ClInclude Include="..\src\Assignments\FinalProject.h">
       <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\Scene.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\SceneFactory.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\SingleCubeScene.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -336,6 +348,12 @@
     </ClCompile>
     <ClCompile Include="..\src\Assignments\FinalProject.cpp">
       <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\SceneFactory.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\SingleCubeScene.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
