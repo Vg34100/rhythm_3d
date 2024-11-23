@@ -1,0 +1,481 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files\imgui">
+      <UniqueIdentifier>{1a67edce-92e5-4d67-8bae-bb5b56ca764a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Assignments">
+      <UniqueIdentifier>{a89eeec8-2de8-4e90-9b51-824944537551}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{f65febad-f08c-47cb-a7b9-5919cc297c35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\filters">
+      <UniqueIdentifier>{3e62f225-7111-4e20-b185-d03bf21be876}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\lib">
+      <UniqueIdentifier>{8e944009-385a-4c67-ab16-dc355d9e402f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\objects">
+      <UniqueIdentifier>{ed74542b-59d1-4208-b009-40f4d462a01d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Tools">
+      <UniqueIdentifier>{8a68e3a6-df25-4c15-8822-db7cf265f0f2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\headers\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\globals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\StringUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\UIHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Properties.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Tool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\GraphicsUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Prompts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\InputOutput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Assignment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Uniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Textures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Tools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Tools\CameraTool.h">
+      <Filter>Source Files\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\AnimationGlobals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\GeometryUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\GPU.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Tools\SelectTool.h">
+      <Filter>Source Files\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\AnimationObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\AnimationObjectRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Meshing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Lighting.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Tools\TransformTool.h">
+      <Filter>Source Files\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab02.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab03.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab04.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\Interpolation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab05.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\GLTFImporter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab06.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab07.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab09.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Lab11.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\ProceduralDemos.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\LineRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\ParticleSystemDemo.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+    <ClInclude Include="..\headers\QuadRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\FinalProject.h">
+      <Filter>Source Files\Assignments</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\InputOutput.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\StringUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_demo.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_draw.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_impl_glfw.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_impl_opengl3.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_tables.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\imgui_widgets.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Properties.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Input.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\GraphEditor.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\ImCurveEdit.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\ImGradient.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\ImGuizmo.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\ImSequencer.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\implot.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\implot_demo.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\implot_items.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\SoftwareRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\GraphicsUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Prompts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\OpenGLRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\imgui\ImGuiFileDialog.cpp">
+      <Filter>Source Files\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Uniform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Textures.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tools\CameraTool.cpp">
+      <Filter>Source Files\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Animation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tools\SelectTool.cpp">
+      <Filter>Source Files\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\AnimationObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Meshing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\AnimationObjectRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Lighting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Tools\TransformTool.cpp">
+      <Filter>Source Files\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab02.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab03.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab04.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Interpolation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab05.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\GLTFImporter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab06.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab07.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab09.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Lab11.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\ProceduralDemos.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\LineRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\ParticleSystemDemo.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\QuadRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\FinalProject.cpp">
+      <Filter>Source Files\Assignments</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\Assignments\output.vert.glsl">
+      <Filter>Source Files\Assignments</Filter>
+    </None>
+    <None Include="..\src\Assignments\output.frag.glsl">
+      <Filter>Source Files\Assignments</Filter>
+    </None>
+    <None Include="..\shaders\datatypes.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\shaders\lights.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\shaders\filters\depthmap.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\expdepthwipe.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\flame.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\fullscreen_mesh.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\fullscreenfilter.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\fullscreenfilter.vert">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\fullscreenfilter_base.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\postprocessingtest1.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\postprocessingtest2.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\primmap.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\spark.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\checkerboard.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\filters\color_test.frag">
+      <Filter>Shaders\filters</Filter>
+    </None>
+    <None Include="..\shaders\lib\LICENSE">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\noise2D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\noise3D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\noise3Dgrad.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\noise4D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\psrdnoise2D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\README">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\rotation.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\cellular2D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\cellular2x2.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\cellular2x2x2.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\cellular3D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\classicnoise2D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\classicnoise3D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\lib\classicnoise4D.glsl">
+      <Filter>Shaders\lib</Filter>
+    </None>
+    <None Include="..\shaders\objects\quad_instance.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\staticmesh.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\staticmesh.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\staticshadow.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\staticshadow.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\line.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\line.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\quad.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\quad.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\quad_instance.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\gltfmesh.vert">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\shaders\objects\gltfmesh.frag">
+      <Filter>Shaders\objects</Filter>
+    </None>
+    <None Include="..\src\Assignments\skinnedMesh.frag">
+      <Filter>Source Files\Assignments</Filter>
+    </None>
+    <None Include="..\src\Assignments\skinnedMesh.vert">
+      <Filter>Source Files\Assignments</Filter>
+    </None>
+  </ItemGroup>
+</Project>
