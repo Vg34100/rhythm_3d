@@ -48,11 +48,15 @@ private:
     size_t currentNoteIndex;
 
     // Timing
-    const float BPM = 60.0f;  // Slower default tempo
+    const float BPM = 120.0f;  // Slower default tempo
     const float BEAT_DURATION = 60.0f / BPM;
-    const float TIMING_TOLERANCE = 0.3f; // More forgiving timing window
+    const float TIMING_TOLERANCE = 0.4f; // More forgiving timing window
     float sequenceStartTime;
     float currentTime;
+
+    const float INTRO_DURATION = 2.0f;  // Duration of intro in seconds
+    const float TRANSITION_DURATION = BEAT_DURATION;  // One full beat for transition
+    float introStartTime;  // Track when intro began
 
     // Visual feedback
     float beatPulseScale;
@@ -85,7 +89,7 @@ private:
     void startNewSequence();
     void updateMonkeyTurn(float dt);
     void updatePlayerTurn(float dt);
-    void evaluatePlayerSequence();
+    void evaluatePlayerSequence(float dt);
     void updateAnimations(float dt);
     void updateBeatVisuals(float dt);
     void renderMonkey(const mat4& projection, const mat4& view, bool isShadow);

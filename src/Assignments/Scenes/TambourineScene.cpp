@@ -11,6 +11,7 @@ TambourineScene::TambourineScene()
     , currentNoteIndex(0)
     , sequenceStartTime(0)
     , currentTime(0)
+    , introStartTime(0)  // Initialize new variable
     , lastShakeState(false)
     , lastClapState(false)
     , showFeedbackCube(true)
@@ -20,63 +21,58 @@ TambourineScene::TambourineScene()
 }
 
 void TambourineScene::init() {
-    // Add this at the start of init()
-    //std::cout << "\n=== Testing Audio System ===\n";
-    //audio.debugPrintPaths();
-    //if (!audio.testAudioPlayback()) {
-    //    std::cout << "Audio test failed!" << std::endl;
-    //}
-    //else {
-    //    std::cout << "Audio test succeeded!" << std::endl;
-    //}
-    //std::cout << "=== Audio Test Complete ===\n\n";
-
-    // Initialize monkey
+    // Initialize all visual objects immediately
     monkey = AnimationObject(AnimationObjectType::box);
     monkey.localPosition = vec3(-2.0f, 0.0f, 0.0f);
     monkey.localScale = vec3(1.0f);
-    monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f); // Brown
+    monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
+    monkey.updateMatrix(true);  // Important: Update matrices immediately
 
-    // Monkey's tambourine
     monkeyTambourine = AnimationObject(AnimationObjectType::box);
     monkeyTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
-    monkeyTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f); // Light brown
+    monkeyTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
+    monkeyTambourine.updateMatrix(true);
 
-    // Initialize player
     player = AnimationObject(AnimationObjectType::box);
     player.localPosition = vec3(2.0f, 0.0f, 0.0f);
     player.localScale = vec3(1.0f);
-    player.color = vec4(1.0f); // White
+    player.color = vec4(1.0f);
+    player.updateMatrix(true);
 
-    // Player's tambourine
     playerTambourine = AnimationObject(AnimationObjectType::box);
     playerTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
     playerTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
+    playerTambourine.updateMatrix(true);
 
-    // Player indicator
     playerIndicator = AnimationObject(AnimationObjectType::box);
     playerIndicator.localScale = vec3(0.3f);
-    playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
+    playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    playerIndicator.updateMatrix(true);
 
-    // Feedback cube with initial setup for beat visualization
     feedbackCube = AnimationObject(AnimationObjectType::box);
     feedbackCube.localPosition = vec3(0.0f, 2.0f, 0.0f);
     feedbackCube.localScale = vec3(0.5f);
     feedbackCube.color = vec4(0.5f);
+    feedbackCube.updateMatrix(true);
+
+    timingIndicator = AnimationObject(AnimationObjectType::box);
+    timingIndicator.localPosition = vec3(0.0f, -1.0f, 0.0f);
+    timingIndicator.localScale = vec3(4.0f, 0.1f, 0.1f);
+    timingIndicator.color = vec4(0.3f, 0.3f, 0.3f, 1.0f);
+    timingIndicator.updateMatrix(true);
+
+    // Initialize game state
     beatPulseScale = 1.0f;
     lastBeatTime = 0.0f;
     currentBeatCount = 0;
     comboCount = 0;
     lastInputTime = 0.0f;
 
-    // Initialize timing indicator
-    timingIndicator = AnimationObject(AnimationObjectType::box);
-    timingIndicator.localPosition = vec3(0.0f, -1.0f, 0.0f);
-    timingIndicator.localScale = vec3(4.0f, 0.1f, 0.1f);
-    timingIndicator.color = vec4(0.3f, 0.3f, 0.3f, 1.0f);
-
     initializeSequences();
     audio.loadScene("tambourine");
+
+    // Set the intro start time
+    introStartTime = currentTime;
     currentState = GameState::Intro;
 }
 
@@ -110,14 +106,13 @@ void TambourineScene::update(double now, float dt) {
 
     // Handle intro state exit
     if (currentState == GameState::Intro) {
-        auto& input = Input::get();
-        // Press any key (space) to start
-        if (input.current.keyStates[GLFW_KEY_SPACE] == GLFW_PRESS) {
+        // Check if intro duration has elapsed
+        if (currentTime - introStartTime >= INTRO_DURATION) {
             currentState = GameState::MonkeyTurn;
             sequenceStartTime = currentTime;
             startNewSequence();
         }
-        return; // Don't process other updates while in intro
+        return;
     }
 
     // Update animations and beat visuals
@@ -135,7 +130,7 @@ void TambourineScene::update(double now, float dt) {
         break;
 
     case GameState::Evaluation:
-        evaluatePlayerSequence();
+        evaluatePlayerSequence(dt);
         break;
     }
 
@@ -189,11 +184,13 @@ void TambourineScene::updateMonkeyTurn(float dt) {
         }
     }
     else if (sequenceTime >= (4.0f * BEAT_DURATION)) {
-        // End of monkey's turn
+        // Play the transition sound
         audio.playSound("tamb_monkey_squeal");
+
+        // Update sequence timing to account for transition
+        sequenceStartTime = currentTime + TRANSITION_DURATION;
         currentState = GameState::PlayerTurn;
         currentNoteIndex = 0;
-        sequenceStartTime = currentTime;
         playerSequence.clear();
     }
 }
@@ -247,34 +244,43 @@ void TambourineScene::updatePlayerTurn(float dt) {
     }
 }
 
-void TambourineScene::evaluatePlayerSequence() {
-    bool success = true;
-    // Simple evaluation - check if we have the same number of notes
-    if (playerSequence.size() == currentSequence.notes.size()) {
-        // Check timing of each note (with some tolerance)
-        const float TIMING_TOLERANCE = 0.2f; // In beats
-        for (size_t i = 0; i < playerSequence.size(); i++) {
-            if (std::abs(playerSequence[i].timing - currentSequence.notes[i].timing) > TIMING_TOLERANCE) {
-                success = false;
-                break;
+void TambourineScene::evaluatePlayerSequence(float dt) {
+    static float evaluationTime = 0;  // Keep track of how long we've been evaluating
+
+    // Only evaluate on first entry into this state
+    if (evaluationTime == 0) {
+        bool success = true;
+        // Simple evaluation - check if we have the same number of notes
+        if (playerSequence.size() == currentSequence.notes.size()) {
+            // Check timing of each note (with some tolerance)
+            for (size_t i = 0; i < playerSequence.size(); i++) {
+                if (std::abs(playerSequence[i].timing - currentSequence.notes[i].timing) > TIMING_TOLERANCE) {
+                    success = false;
+                    break;
+                }
             }
         }
-    }
-    else {
-        success = false;
+        else {
+            success = false;
+        }
+
+        if (success) {
+            audio.playSound("tamb_monkey_happy");
+            feedbackCube.color = vec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
+        }
+        else {
+            audio.playSound("tamb_monkey_squeal");
+            feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+        }
     }
 
-    if (success) {
-        audio.playSound("tamb_monkey_happy");
-        feedbackCube.color = vec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
-    }
-    else {
-        audio.playSound("tamb_monkey_squeal");
-        feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
-    }
+    evaluationTime += dt;  // Add time passed
 
-    // Start new sequence
-    startNewSequence();
+    // Only move to next sequence after one beat
+    if (evaluationTime >= BEAT_DURATION) {
+        evaluationTime = 0;  // Reset for next evaluation
+        startNewSequence();
+    }
 }
 
 void TambourineScene::startNewSequence() {
