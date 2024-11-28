@@ -72,7 +72,8 @@ void FinalProject::renderUI() {
         static const char* scenes[] = {
             // TODO: Add new Scenes here to select
             "Single Cube",
-            "Single Sphere"
+            "Single Sphere",
+            "Tambourine"
         };
 
         int currentItem = static_cast<int>(currentSceneType);
