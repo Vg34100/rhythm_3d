@@ -201,6 +201,7 @@
     <ClInclude Include="..\src\Assignments\Lab11.h" />
     <ClInclude Include="..\src\Assignments\ParticleSystemDemo.h" />
     <ClInclude Include="..\src\Assignments\ProceduralDemos.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\ModelTestScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\Scene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SceneFactory.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SingleCubeScene.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="..\src\Assignments\Lab11.cpp" />
     <ClCompile Include="..\src\Assignments\ParticleSystemDemo.cpp" />
     <ClCompile Include="..\src\Assignments\ProceduralDemos.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\ModelTestScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SceneFactory.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleCubeScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleSphereScene.cpp" />
