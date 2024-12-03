@@ -33,6 +33,10 @@ private:
     AnimationObject feedbackCube;
     AnimationObject timingIndicator; // New: shows current beat position
 
+
+    AnimationObject monkeyTambourineModel;
+    AnimationObject playerTambourineModel;
+
     // Game state
     enum class GameState {
         Intro,       // New: show instructions

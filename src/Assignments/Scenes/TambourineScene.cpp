@@ -33,6 +33,14 @@ void TambourineScene::init() {
     monkeyTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
     monkeyTambourine.updateMatrix(true);
 
+    // Add new model tambourine
+    monkeyTambourineModel = AnimationObject(AnimationObjectType::model);
+    monkeyTambourineModel.meshName = "../assets/models/tambourine.obj";
+    monkeyTambourineModel.localScale = vec3(1.0f);
+    monkeyTambourineModel.color = vec4(1.0f);
+    monkeyTambourineModel.updateMatrix(true);
+
+
     player = AnimationObject(AnimationObjectType::box);
     player.localPosition = vec3(2.0f, 0.0f, 0.0f);
     player.localScale = vec3(1.0f);
@@ -43,6 +51,16 @@ void TambourineScene::init() {
     playerTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
     playerTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
     playerTambourine.updateMatrix(true);
+
+
+    // Add new model tambourine
+    playerTambourineModel = AnimationObject(AnimationObjectType::model);
+    playerTambourineModel.meshName = "../assets/models/tambourine.obj";
+    playerTambourineModel.localScale = vec3(1.0f);
+    playerTambourineModel.color = vec4(1.0f);
+    playerTambourineModel.updateMatrix(true);
+
+
 
     playerIndicator = AnimationObject(AnimationObjectType::box);
     playerIndicator.localScale = vec3(0.3f);
@@ -305,18 +323,24 @@ void TambourineScene::updateAnimations(float dt) {
 
         float t = monkeyAnim.animationTime / ANIM_DURATION;
         if (monkeyAnim.isShaking) {
-            monkeyTambourine.localPosition = vec3(-0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            vec3 newPos = vec3(-0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            monkeyTambourine.localPosition = newPos;
+            monkeyTambourineModel.localPosition = newPos;
+            monkeyTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
         }
         else if (monkeyAnim.isClapping) {
-            monkeyTambourine.localPosition = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            monkeyTambourine.localPosition = newPos;
+            monkeyTambourineModel.localPosition = newPos;
         }
     }
     else {
-        monkeyTambourine.localPosition = vec3(-0.8f, 0.0f, 0.0f);
+        vec3 defaultPos = vec3(-0.8f, 0.0f, 0.0f);
+        monkeyTambourine.localPosition = defaultPos;
+        monkeyTambourineModel.localPosition = defaultPos;
+        monkeyTambourineModel.localRotation = vec3(0.0f);
     }
 
-    // Similar animation updates for player...
-    // (Animation code for player tambourine would go here)
     // Update player animations
     if (playerAnim.isShaking || playerAnim.isClapping) {
         playerAnim.animationTime += dt;
@@ -328,20 +352,32 @@ void TambourineScene::updateAnimations(float dt) {
 
         float t = playerAnim.animationTime / ANIM_DURATION;
         if (playerAnim.isShaking) {
-            playerTambourine.localPosition = vec3(0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            vec3 newPos = vec3(0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            playerTambourine.localPosition = newPos;
+            playerTambourineModel.localPosition = newPos;
+            playerTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
         }
         else if (playerAnim.isClapping) {
-            playerTambourine.localPosition = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            playerTambourine.localPosition = newPos;
+            playerTambourineModel.localPosition = newPos;
         }
     }
     else {
-        playerTambourine.localPosition = vec3(0.8f, 0.0f, 0.0f);
+        vec3 defaultPos = vec3(0.8f, 0.0f, 0.0f);
+        playerTambourine.localPosition = defaultPos;
+        playerTambourineModel.localPosition = defaultPos;
+        playerTambourineModel.localRotation = vec3(0.0f);
     }
 
     // Update player indicator position
     playerIndicator.localPosition = vec3(player.localPosition.x,
         player.localPosition.y + 1.5f,
         player.localPosition.z);
+
+    // Don't forget to update matrices
+    monkeyTambourineModel.updateMatrix(true);
+    playerTambourineModel.updateMatrix(true);
 }
 
 void TambourineScene::render(const mat4& projection, const mat4& view, bool isShadow) {
@@ -394,8 +430,9 @@ void TambourineScene::renderUI() {
 }
 
 ptr_vector<AnimationObject> TambourineScene::getObjects() {
-    return { &monkey, &monkeyTambourine, &player, &playerTambourine,
-             &playerIndicator, &feedbackCube };
+    return { &monkey, &monkeyTambourine, &monkeyTambourineModel,
+             &player, &playerTambourine, &playerTambourineModel,
+             &playerIndicator, &feedbackCube, &timingIndicator };
 }
 
 TambourineScene::~TambourineScene() {
@@ -439,6 +476,12 @@ void TambourineScene::renderMonkey(const mat4& projection, const mat4& view, boo
         glCullFace(GL_FRONT);
     }
     jr.renderBatchWithOwnColor(monkeyTambourine, isShadow);
+    jr.endBatchRender(isShadow);
+
+
+    // Render model monkey's tambourine
+    jr.beginBatchRender(monkeyTambourineModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(monkeyTambourineModel, isShadow);
     jr.endBatchRender(isShadow);
 }
 
@@ -498,6 +541,13 @@ void TambourineScene::renderPlayer(const mat4& projection, const mat4& view, boo
     }
     jr.renderBatchWithOwnColor(playerIndicator, isShadow);
     jr.endBatchRender(isShadow);
+
+
+    // Render model player's tambourine
+    jr.beginBatchRender(playerTambourineModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(playerTambourineModel, isShadow);
+    jr.endBatchRender(isShadow);
+
 }
 
 std::string TambourineScene::getTimingFeedback(float difference) {
