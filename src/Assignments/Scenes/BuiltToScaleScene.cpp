@@ -2,16 +2,27 @@
 #include "AnimationObjectRenderer.h"
 #include "Input.h"
 #include "imgui.h"
+#include <iostream>
 
 BuiltToScaleScene::BuiltToScaleScene() {
     springs.resize(NUM_SPRINGS);
     springAnims.resize(NUM_SPRINGS);
-    // Initialize spring animations
     for (auto& anim : springAnims) {
         anim.isAnimating = false;
         anim.animationTime = 0.0f;
         anim.baseHeight = 0.0f;
     }
+
+    // Initialize pattern info
+    patternInfo = {
+        Pattern::ThreeStep,  // Start with simplest pattern
+        3,                   // Steps remaining
+        3,                   // Total steps
+        false,              // Spring not retracted
+        0.0f,               // Retract anim time
+        0.0f,               // Launch anim time
+        false               // Not awaiting launch input
+    };
 }
 
 BuiltToScaleScene::~BuiltToScaleScene() {}
@@ -53,9 +64,10 @@ void BuiltToScaleScene::initPole() {
 
 void BuiltToScaleScene::initInputIndicator() {
     inputIndicator = AnimationObject(AnimationObjectType::box);
-    inputIndicator.localScale = vec3(0.3f);
-    inputIndicator.localPosition = springs[2].localPosition + vec3(0.0f, 1.5f, 0.0f);
-    inputIndicator.color = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    inputIndicator.localScale = vec3(0.5f);  // Made it bigger
+    inputIndicator.localPosition = springs[2].localPosition + vec3(0.0f, 2.0f, 0.0f);  // Moved it up
+    inputIndicator.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);  // White by default
+    inputIndicator.updateMatrix(true);  // Make sure to update the matrix
 }
 
 void BuiltToScaleScene::update(double now, float dt) {
@@ -90,45 +102,74 @@ void BuiltToScaleScene::handleInput() {
 
     auto& input = Input::get();
     bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+    bool isKPressed = input.current.keyStates[GLFW_KEY_K] == GLFW_PRESS;
     static bool wasLPressed = false;
+    static bool wasKPressed = false;
 
-    // Need input when approaching spring 2 from EITHER direction
-    bool needsInput = (poleAnim.currentSpringIndex == 1 && poleAnim.movingRight) ||
-        (poleAnim.currentSpringIndex == 3 && !poleAnim.movingRight);
-
-    if (needsInput) {
-        float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
-
-        // Set the input window active as we approach the spring
-        if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
-            poleAnim.inputRequired = true;
+    // If spring is retracted, only allow K press
+    if (patternInfo.springRetracted) {
+        if (isLPressed) {
+            failPole();
+            return;
         }
 
-        // Handle input during the window
-        if (poleAnim.inputRequired) {
-            if (isLPressed && !wasLPressed) {
-                poleAnim.inputSuccess = true;
-                poleAnim.inputRequired = false;
-                inputIndicator.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+        if (isKPressed && !wasKPressed) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+            // Make timing window very obvious for testing
+            //if (normalizedTime >= 0.2f && normalizedTime <= 0.8f) {
+            if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
+                std::cout << "Launch initiated!" << std::endl;  // Debug print
+                poleAnim.state = PoleState::Launching;
+                patternInfo.launchAnimTime = 0.0f;
+                patternInfo.awaitingLaunchInput = false;
+                springs[2].localPosition.z = 0.0f;
+            }
+            else {
+                failPole();
             }
         }
     }
+    else {
+        // Regular bounce logic for non-launch steps
+        bool needsInput = (poleAnim.currentSpringIndex == 1 && poleAnim.movingRight) ||
+            (poleAnim.currentSpringIndex == 3 && !poleAnim.movingRight);
 
-    // Check for failure if we're at spring 2 and didn't succeed
-    if (poleAnim.currentSpringIndex == 2 && !poleAnim.inputSuccess) {
-        failPole();
+        if (needsInput) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+            if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
+                poleAnim.inputRequired = true;
+            }
+
+            if (poleAnim.inputRequired) {
+                if (isLPressed && !wasLPressed) {
+                    poleAnim.inputSuccess = true;
+                    poleAnim.inputRequired = false;
+                    inputIndicator.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                }
+            }
+        }
+
+        if (poleAnim.currentSpringIndex == 2 && !poleAnim.inputSuccess) {
+            failPole();
+        }
     }
 
     wasLPressed = isLPressed;
+    wasKPressed = isKPressed;
 }
 
 void BuiltToScaleScene::updateInputIndicator(double now, float dt) {
-    if (poleAnim.inputRequired) {
-        inputIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow during input window
-        inputIndicator.localScale = vec3(0.3f + 0.1f * sin(now * 10.0f));  // Pulse using actual time
+    if (patternInfo.springRetracted && poleAnim.state == PoleState::Normal) {
+        // Make it more obvious when we can launch
+        inputIndicator.color = vec4(1.0f, 0.0f, 1.0f, 1.0f);  // Purple for launch window
+        inputIndicator.localScale = vec3(0.4f + 0.2f * sin(now * 10.0f));  // Bigger pulse
+    }
+    else if (poleAnim.inputRequired) {
+        inputIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        inputIndicator.localScale = vec3(0.3f + 0.1f * sin(now * 10.0f));
     }
     else if (!poleAnim.inputSuccess) {
-        inputIndicator.color = vec4(0.5f, 0.5f, 0.5f, 1.0f);  // Gray when inactive
+        inputIndicator.color = vec4(0.5f, 0.5f, 0.5f, 1.0f);
         inputIndicator.localScale = vec3(0.3f);
     }
 }
@@ -138,7 +179,11 @@ void BuiltToScaleScene::failPole() {
     poleAnim.failTime = 0.0f;
     poleAnim.startPos = pole.localPosition;
     poleAnim.endPos = pole.localPosition + vec3(2.0f, -3.0f, 0.0f);
-    inputIndicator.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red for failure
+    inputIndicator.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+    // Reset spring position on fail
+    springs[2].localPosition.z = 0.0f;
+    patternInfo.springRetracted = false;
 }
 
 vec3 BuiltToScaleScene::calculateFailPosition(float t) {
@@ -151,9 +196,21 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
     switch (poleAnim.state) {
     case PoleState::Normal:
         poleAnim.animationTime += dt;
-        if (poleAnim.animationTime >= BOUNCE_DURATION) {
+
+        // Don't automatically move to next bounce if waiting for launch
+        if (poleAnim.animationTime >= BOUNCE_DURATION && !patternInfo.springRetracted) {
             startNewBounce();
         }
+        // Add this check: If we missed the launch window completely, fail
+        if (patternInfo.springRetracted) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+            if (normalizedTime > 2.0f) { // Past the launch window
+                failPole();
+                return;
+            }
+        }
+
+        updateSpringRetraction(dt);
         pole.localPosition = calculatePolePosition(poleAnim.animationTime / BOUNCE_DURATION);
         break;
 
@@ -201,49 +258,52 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
                 t * t * endPos;
         }
         break;
+
+
+    case PoleState::Launching:
+        std::cout << "Updating launch animation" << std::endl;  // Debug print
+        updateLaunchAnimation(dt);
+        break;
     }
 }
 
 void BuiltToScaleScene::respawnPole() {
     poleAnim.state = PoleState::Respawning;
     poleAnim.animationTime = 0.0f;
-
-    // Randomly choose starting side
-    poleAnim.movingRight = (rand() % 2) == 0;
-
-    // Set starting spring index based on direction
-    poleAnim.currentSpringIndex = poleAnim.movingRight ? 0 : NUM_SPRINGS - 1;
+    selectRandomPattern(); // Choose new pattern on respawn
 
     poleAnim.inputRequired = false;
     poleAnim.inputSuccess = false;
     pole.localRotation = vec3(90.0f, 0.0f, 90.0f);
 
     float baseHeight = 0.5f;
-    // Position based on chosen side
+    // Set position based on pattern's starting point
     if (poleAnim.movingRight) {
-        pole.localPosition = vec3(
-            springs[0].localPosition.x - 3.0f,  // Left of first spring
-            baseHeight,
-            0.0f
-        );
+        pole.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
         poleAnim.startPos = springs[0].localPosition;
         poleAnim.endPos = springs[1].localPosition;
     }
     else {
-        pole.localPosition = vec3(
-            springs[NUM_SPRINGS - 1].localPosition.x + 3.0f,  // Right of last spring
-            baseHeight,
-            0.0f
-        );
-        poleAnim.startPos = springs[NUM_SPRINGS - 1].localPosition;
-        poleAnim.endPos = springs[NUM_SPRINGS - 2].localPosition;
+        pole.localPosition = vec3(springs[3].localPosition.x + 3.0f, baseHeight, 0.0f);
+        poleAnim.startPos = springs[3].localPosition;
+        poleAnim.endPos = springs[2].localPosition;
     }
 }
 
 void BuiltToScaleScene::startNewBounce() {
-    // Trigger bounce animation for the spring we're leaving
+    // Don't auto-bounce if we're on the final step waiting for launch
+    if (patternInfo.stepsRemaining == 1 && patternInfo.springRetracted) {
+        return;  // Wait for player input instead of bouncing
+    }
+
+    // Don't bounce if we've used all steps
+    if (patternInfo.stepsRemaining <= 0) {
+        failPole();
+        return;
+    }
 
     poleAnim.animationTime = 0.0f;
+    patternInfo.stepsRemaining--;
 
     if (poleAnim.movingRight) {
         poleAnim.currentSpringIndex++;
@@ -257,20 +317,13 @@ void BuiltToScaleScene::startNewBounce() {
             poleAnim.movingRight = true;
         }
     }
-    triggerSpringBounce(poleAnim.currentSpringIndex);
 
+    triggerSpringBounce(poleAnim.currentSpringIndex);
 
     poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
     poleAnim.endPos = springs[poleAnim.movingRight ?
         poleAnim.currentSpringIndex + 1 :
         poleAnim.currentSpringIndex - 1].localPosition;
-
-    // Reset input flags for BOTH approaches to the red spring
-    if ((poleAnim.currentSpringIndex == 1 && poleAnim.movingRight) ||
-        (poleAnim.currentSpringIndex == 3 && !poleAnim.movingRight)) {
-        poleAnim.inputSuccess = false;
-        poleAnim.inputRequired = false;
-    }
 }
 
 
@@ -310,12 +363,17 @@ void BuiltToScaleScene::render(const mat4& projection, const mat4& view, bool is
 
 void BuiltToScaleScene::renderUI() {
     if (ImGui::CollapsingHeader("Built to Scale Debug")) {
+        const char* patternNames[] = { "Three Step", "Five Step", "Eight Step" };
+        ImGui::Text("Pattern: %s", patternNames[static_cast<int>(patternInfo.type)]);
+        ImGui::Text("Steps Remaining: %d/%d", patternInfo.stepsRemaining, patternInfo.totalSteps);
+        ImGui::Text("Spring Retracted: %s", patternInfo.springRetracted ? "Yes" : "No");
         ImGui::Text("Current Spring Index: %d", poleAnim.currentSpringIndex);
         ImGui::Text("Moving Right: %s", poleAnim.movingRight ? "Yes" : "No");
         ImGui::Text("Animation Time: %.2f", poleAnim.animationTime);
         ImGui::Text("State: %s",
             poleAnim.state == PoleState::Normal ? "Normal" :
-            poleAnim.state == PoleState::Failed ? "Failed" : "Respawning");
+            poleAnim.state == PoleState::Failed ? "Failed" :
+            poleAnim.state == PoleState::Launching ? "Launching" : "Respawning");
         if (poleAnim.state == PoleState::Failed) {
             ImGui::Text("Fail Time: %.2f", poleAnim.failTime);
         }
@@ -339,4 +397,100 @@ void BuiltToScaleScene::triggerSpringBounce(int springIndex) {
     springAnims[springIndex].isAnimating = true;
     springAnims[springIndex].animationTime = 0.0f;
     springAnims[springIndex].baseHeight = springs[springIndex].localPosition.y;
+}
+
+void BuiltToScaleScene::selectRandomPattern() {
+    Pattern patterns[] = { Pattern::ThreeStep, Pattern::FiveStep, Pattern::EightStep };
+    patternInfo.type = patterns[rand() % 3];
+
+    switch (patternInfo.type) {
+    case Pattern::ThreeStep:
+        patternInfo.totalSteps = 3;
+        poleAnim.currentSpringIndex = 0;
+        poleAnim.movingRight = true;
+        break;
+    case Pattern::FiveStep:
+        patternInfo.totalSteps = 5;
+        poleAnim.currentSpringIndex = 0;
+        poleAnim.movingRight = true;
+        break;
+    case Pattern::EightStep:
+        patternInfo.totalSteps = 8;
+        poleAnim.currentSpringIndex = 3;
+        poleAnim.movingRight = false;
+        break;
+    }
+
+    patternInfo.stepsRemaining = patternInfo.totalSteps;
+    patternInfo.springRetracted = false;
+    patternInfo.retractAnimTime = 0.0f;
+    patternInfo.launchAnimTime = 0.0f;
+    patternInfo.awaitingLaunchInput = false;
+
+    // Reset spring position
+    springs[2].localPosition.z = 0.0f;
+}
+
+bool BuiltToScaleScene::isSecondToLastStep() const {
+    return patternInfo.stepsRemaining == 2;
+}
+
+bool BuiltToScaleScene::isFinalStep() const {
+    return patternInfo.stepsRemaining == 1;
+}
+
+void BuiltToScaleScene::updateSpringRetraction(float dt) {
+    if (isSecondToLastStep() && !patternInfo.springRetracted) {
+        patternInfo.retractAnimTime += dt;
+        if (patternInfo.retractAnimTime >= RETRACT_DURATION) {
+            patternInfo.springRetracted = true;
+            patternInfo.retractAnimTime = RETRACT_DURATION;
+            patternInfo.awaitingLaunchInput = true;
+        }
+
+        // Animate spring retraction in Z direction (backwards)
+        float t = patternInfo.retractAnimTime / RETRACT_DURATION;
+        springs[2].localPosition.z = -(t * 1.0f); // Move back by 1 unit
+    }
+}
+
+void BuiltToScaleScene::handleLaunchInput() {
+    if (!patternInfo.awaitingLaunchInput) return;
+
+    auto& input = Input::get();
+    bool isKPressed = input.current.keyStates[GLFW_KEY_K] == GLFW_PRESS;
+    static bool wasKPressed = false;
+
+    if (isKPressed && !wasKPressed) {
+        float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+        if (normalizedTime >= 0.3f && normalizedTime <= 0.7f) {
+            poleAnim.state = PoleState::Launching;
+            patternInfo.launchAnimTime = 0.0f;
+            patternInfo.awaitingLaunchInput = false;
+
+            // Reset spring position
+            springs[2].localPosition.z = 0.0f; // Reset Z position instead of X
+        }
+        else {
+            failPole();
+        }
+    }
+
+    wasKPressed = isKPressed;
+}
+
+void BuiltToScaleScene::updateLaunchAnimation(float dt) {
+    if (poleAnim.state != PoleState::Launching) return;
+
+    std::cout << "Launch animation time: " << patternInfo.launchAnimTime << std::endl;  // Debug print
+
+    patternInfo.launchAnimTime += dt;
+    if (patternInfo.launchAnimTime >= LAUNCH_DURATION) {
+        respawnPole();
+        return;
+    }
+
+    // Very obvious launch animation for testing
+    pole.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * 5.0f * dt);  // Much faster
+    pole.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);  // More spinning
 }
