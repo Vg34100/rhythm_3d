@@ -1,12 +1,13 @@
 ﻿#pragma once
+
 #include "Scene.h"
 #include "AnimationObject.h"
-#include "AudioSystem.h"
 
 class BuiltToScaleScene : public Scene {
 public:
     BuiltToScaleScene();
     ~BuiltToScaleScene() override;
+
     void init() override;
     void update(double now, float dt) override;
     void render(const mat4& projection, const mat4& view, bool isShadow) override;
@@ -14,67 +15,62 @@ public:
     ptr_vector<AnimationObject> getObjects() override;
 
 private:
-    // Core gameplay objects
-    std::vector<AnimationObject> springBlocks;  // The 4 blocks that bounce the rod
-    AnimationObject rod;                        // The horizontal rod that bounces
-    AnimationObject ground;                     // Ground platform
-    AnimationObject debugTimingBar;            // Visual timing indicator
-    AnimationObject feedbackCube;              // Visual feedback for hits
+    // Visual objects
+    std::vector<AnimationObject> springs; // Index 2 is the player's red spring
+    AnimationObject pole;
+    AnimationObject inputIndicator;  // Visual feedback for input timing
 
-    // Rod movement and state
-    struct RodState {
-        int currentBlock;           // Current block index (1-4)
-        int direction;             // 1 for right, -1 for left
-        float arcProgress;         // Progress through current arc (0-1)
-        bool isActive;             // Whether rod is in play
-        bool isThrowing;           // Whether rod is being thrown at squares
-        vec3 throwStartPos;        // Start position for throw
-        vec3 throwTargetPos;      // Target position for throw
-        float throwProgress;       // Progress of throw animation
-    } rodState;
-
-    // Square pair management
-    struct SquarePair {
-        AnimationObject left;
-        AnimationObject right;
-        float progress;           // Movement progress (0-1)
-        bool readyForCollision;   // Whether squares are about to overlap
-        bool isColliding;         // Whether squares are currently colliding
-        bool isDying;            // Whether squares are in death animation
-        float deathProgress;     // Progress of death animation
+    // Animation states
+    enum class PoleState {
+        Normal,     // Regular bouncing between springs
+        Failed,     // Missed input, falling off
+        Respawning  // Moving back to start position
     };
-    std::vector<SquarePair> squarePairs;
 
-    // Game state
-    enum class GameState {
-        Ready,
-        Playing,
-        Failed
-    } currentState;
+    struct {
+        int currentSpringIndex;     // Current spring the pole is at/heading to
+        bool movingRight;           // Direction of movement
+        float animationTime;        // Current time in bounce animation
+        vec3 startPos;             // Starting position of current bounce
+        vec3 endPos;               // Target position of current bounce
+        PoleState state;           // Current state of pole animation
+        float failTime;            // Time since failure started
+        bool inputRequired;        // Flag for when input is needed
+        bool inputSuccess;         // Whether input was successful
+    } poleAnim;
 
-    // Timing and gameplay variables
-    float currentTime;
-    float lastBlockBounce;
-    float blockBounceDuration;
-    int score;
-    bool redBlockPulledBack;
-    float redBlockPullProgress;
-    float timeSinceLastSpawn;
-    const float SPAWN_INTERVAL = 4.0f;
-    const float BLOCK_BOUNCE_HEIGHT = 0.2f;
-    const float ROD_ARC_HEIGHT = 1.0f;
+    // In the header, add to private section:
+    struct SpringAnimation {
+        bool isAnimating;
+        float animationTime;
+        float baseHeight;
+        static constexpr float ANIM_DURATION = 0.2f;  // Quick bounce
+        static constexpr float MAX_BOUNCE = 0.2f;     // How high it bounces
+    };
 
-    // Audio system reference
-    AudioSystem& audio;
+    // Add to class private members:
+    std::vector<SpringAnimation> springAnims;
+
+    // Constants
+    const float BOUNCE_DURATION = 0.5f;   // Time for one bounce
+    const float SPRING_SPACING = 2.0f;    // Space between springs
+    const float BOUNCE_HEIGHT = 1.0f;     // Height of bounce arc
+    const int NUM_SPRINGS = 4;            // Total number of springs
+    const float FAIL_DURATION = 1.0f;     // How long failure animation lasts
+    const float INPUT_WINDOW = 0.50f;     // Time window for valid input
+    const float POLE_Z_OFFSET = 0.0f;     // Offset to put pole through springs
 
     // Helper functions
-    void updateRodMovement(float dt);
-    void updateSquares(float dt);
-    void updateBlockAnimations(float dt);
+    void initSprings();
+    void initPole();
+    void initInputIndicator();
+    void updatePoleAnimation(float dt);
+    vec3 calculatePolePosition(float t);
+    void startNewBounce();
     void handleInput();
-    void spawnNewSquarePair();
-    void checkCollisions();
-    void resetRod(bool startFromRight);
-    vec3 calculateRodArcPosition(vec3 start, vec3 end, float progress);
-    void cleanupDeadSquares();
+    void failPole();
+    void respawnPole();
+    vec3 calculateFailPosition(float t);
+    void updateInputIndicator(double now, float dt);
+    void triggerSpringBounce(int springIndex);
 };
