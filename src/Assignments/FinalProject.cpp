@@ -73,7 +73,8 @@ void FinalProject::renderUI() {
             // TODO: Add new Scenes here to select
             "Single Cube",
             "Single Sphere",
-            "Tambourine"
+            "Tambourine",
+            "Built To Scale"
         };
 
         int currentItem = static_cast<int>(currentSceneType);

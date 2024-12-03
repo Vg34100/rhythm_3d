@@ -84,6 +84,28 @@ void AudioSystem::loadScene(const std::string& sceneName) {
             std::cout << "All sounds loaded successfully!" << std::endl;
         }
     }
+    if (sceneName == "builttoscale") {
+        const std::vector<std::string> soundIds = {
+            "builttoscale_patternA",
+            "builttoscale_patternB",
+            "builttoscale_patternB_fast",
+            "builttoscale_technical"
+        };
+
+        bool anyLoadFailed = false;
+        for (const auto& soundId : soundIds) {
+            std::string filepath = buildSoundPath(soundId);
+            currentScene->sounds[soundId] = std::make_unique<WaveSound>(filepath);
+            if (!currentScene->sounds[soundId]->load()) {
+                std::cout << "Failed to load sound: " << soundId << std::endl;
+                anyLoadFailed = true;
+            }
+        }
+
+        if (anyLoadFailed) {
+            std::cout << "Some sounds failed to load! Check file paths and formats." << std::endl;
+        }
+    }
 }
 
 void AudioSystem::unloadScene() {
