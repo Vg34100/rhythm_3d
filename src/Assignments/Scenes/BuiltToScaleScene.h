@@ -101,4 +101,26 @@ private:
     void updateLaunchAnimation(float dt);
     bool isSecondToLastStep() const;
     bool isFinalStep() const;
+    bool guideSquaresMovedDuringLaunch;
+
+    AnimationObject leftGuideSquare;
+    AnimationObject rightGuideSquare;
+    float guideSquareWidth = 1.0f;      // Width of each guide square
+    float guideForwardOffset = 5.0f;     // Fixed distance in front of springs
+    bool guidesActive = false;           // Track if guides are currently in use
+    // Add these to your private function declarations
+    void spawnGuideSquares();
+    void moveGuideSquares();
+
+    // Add these to your private member variables
+    struct {
+        bool isAnimating;
+        float animationTime;
+        float totalAnimationDuration;
+        vec3 startLeftPos;
+        vec3 startRightPos;
+        vec3 endLeftPos;
+        vec3 endRightPos;
+    } squaresLaunchAnim;
+
 };

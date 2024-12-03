@@ -23,6 +23,9 @@ BuiltToScaleScene::BuiltToScaleScene() {
         0.0f,               // Launch anim time
         false               // Not awaiting launch input
     };
+    guideSquaresMovedDuringLaunch = false;
+    squaresLaunchAnim.isAnimating = false;
+    squaresLaunchAnim.animationTime = 0.0f;
 }
 
 BuiltToScaleScene::~BuiltToScaleScene() {}
@@ -31,6 +34,15 @@ void BuiltToScaleScene::init() {
     initSprings();
     initPole();
     initInputIndicator();
+
+    // Initialize guide squares
+    leftGuideSquare = AnimationObject(AnimationObjectType::box);
+    leftGuideSquare.localScale = vec3(guideSquareWidth);
+    leftGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
+
+    rightGuideSquare = AnimationObject(AnimationObjectType::box);
+    rightGuideSquare.localScale = vec3(guideSquareWidth);
+    rightGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
 }
 
 void BuiltToScaleScene::initSprings() {
@@ -95,6 +107,12 @@ void BuiltToScaleScene::update(double now, float dt) {
 
     pole.updateMatrix(true);
     inputIndicator.updateMatrix(true);
+
+    // Add these lines where other matrices are updated
+    if (guidesActive) {
+        leftGuideSquare.updateMatrix(true);
+        rightGuideSquare.updateMatrix(true);
+    }
 }
 
 void BuiltToScaleScene::handleInput() {
@@ -201,9 +219,11 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
         if (poleAnim.animationTime >= BOUNCE_DURATION && !patternInfo.springRetracted) {
             startNewBounce();
         }
+
         // Add this check: If we missed the launch window completely, fail
         if (patternInfo.springRetracted) {
             float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+
             if (normalizedTime > 2.0f) { // Past the launch window
                 failPole();
                 return;
@@ -230,6 +250,7 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
         if (poleAnim.animationTime >= BOUNCE_DURATION) {
             poleAnim.state = PoleState::Normal;
             poleAnim.animationTime = 0.0f;
+            moveGuideSquares();
             poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
             poleAnim.endPos = springs[poleAnim.movingRight ?
                 poleAnim.currentSpringIndex + 1 :
@@ -288,6 +309,27 @@ void BuiltToScaleScene::respawnPole() {
         poleAnim.startPos = springs[3].localPosition;
         poleAnim.endPos = springs[2].localPosition;
     }
+    // Reset guides for new pattern
+
+        // Reset guide squares positions
+    leftGuideSquare.localPosition = squaresLaunchAnim.startLeftPos;
+    rightGuideSquare.localPosition = squaresLaunchAnim.startRightPos;
+   
+    leftGuideSquare.localRotation = vec3(0);
+    rightGuideSquare.localRotation = vec3(0);
+
+    
+    leftGuideSquare.updateMatrix(true);
+    rightGuideSquare.updateMatrix(true);
+
+    // Deactivate guides
+    //guidesActive = false;
+
+    // Reset squares animation variables
+    squaresLaunchAnim.isAnimating = false;
+    squaresLaunchAnim.animationTime = 0.0f;
+    spawnGuideSquares();
+    guideSquaresMovedDuringLaunch = false; // Reset the flag for the new pattern
 }
 
 void BuiltToScaleScene::startNewBounce() {
@@ -319,6 +361,7 @@ void BuiltToScaleScene::startNewBounce() {
     }
 
     triggerSpringBounce(poleAnim.currentSpringIndex);
+    moveGuideSquares();  // Add this line
 
     poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
     poleAnim.endPos = springs[poleAnim.movingRight ?
@@ -359,6 +402,13 @@ void BuiltToScaleScene::render(const mat4& projection, const mat4& view, bool is
     jr.beginBatchRender(pole.shapeType, false, vec4(1.f), isShadow);
     jr.renderBatchWithOwnColor(pole, isShadow);
     jr.endBatchRender(isShadow);
+
+    if (guidesActive) {
+        jr.beginBatchRender(leftGuideSquare.shapeType, false, vec4(1.f), isShadow);
+        jr.renderBatchWithOwnColor(leftGuideSquare, isShadow);
+        jr.renderBatchWithOwnColor(rightGuideSquare, isShadow);
+        jr.endBatchRender(isShadow);
+    }
 }
 
 void BuiltToScaleScene::renderUI() {
@@ -387,6 +437,10 @@ ptr_vector<AnimationObject> BuiltToScaleScene::getObjects() {
     }
     objects.push_back(&pole);
     objects.push_back(&inputIndicator);
+    if (guidesActive) {
+        objects.push_back(&leftGuideSquare);
+        objects.push_back(&rightGuideSquare);
+    }
     return objects;
 }
 
@@ -429,6 +483,7 @@ void BuiltToScaleScene::selectRandomPattern() {
 
     // Reset spring position
     springs[2].localPosition.z = 0.0f;
+    guideSquaresMovedDuringLaunch = false; // Reset the flag when a new pattern is selected
 }
 
 bool BuiltToScaleScene::isSecondToLastStep() const {
@@ -481,16 +536,94 @@ void BuiltToScaleScene::handleLaunchInput() {
 
 void BuiltToScaleScene::updateLaunchAnimation(float dt) {
     if (poleAnim.state != PoleState::Launching) return;
-
-    std::cout << "Launch animation time: " << patternInfo.launchAnimTime << std::endl;  // Debug print
-
+    if (!guideSquaresMovedDuringLaunch) {
+        // We already moved the guide squares to overlap; now start the push animation
+        moveGuideSquares();
+        guideSquaresMovedDuringLaunch = true;
+    }
+    // Update the pole's launch animation time
     patternInfo.launchAnimTime += dt;
+
+    // Move the pole forward
+    pole.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * dt);
+    pole.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);
+    pole.updateMatrix(true);
+
+    // Calculate when the pole reaches the squares
+    if (!squaresLaunchAnim.isAnimating) {
+        float poleStartZ = springs[2].localPosition.z; // Starting Z position of the pole
+        float squaresZ = leftGuideSquare.localPosition.z; // Z position of the squares
+        float distanceToSquares = squaresZ - poleStartZ;
+        float timeToReachSquares = distanceToSquares / LAUNCH_SPEED;
+
+        // Start the squares' animation when the pole reaches them
+        if (patternInfo.launchAnimTime >= timeToReachSquares) {
+            // Initialize squares animation
+            squaresLaunchAnim.isAnimating = true;
+            squaresLaunchAnim.animationTime = 0.0f;
+            squaresLaunchAnim.totalAnimationDuration = LAUNCH_DURATION - patternInfo.launchAnimTime;
+
+            // Record starting positions
+            squaresLaunchAnim.startLeftPos = leftGuideSquare.localPosition;
+            squaresLaunchAnim.startRightPos = rightGuideSquare.localPosition;
+
+            // Set ending positions (move backward along Z-axis)
+            float backwardDistance = 5.0f; // Adjust as desired
+            squaresLaunchAnim.endLeftPos = squaresLaunchAnim.startLeftPos + vec3(0.0f, 0.0f, backwardDistance);
+            squaresLaunchAnim.endRightPos = squaresLaunchAnim.startRightPos + vec3(0.0f, 0.0f, backwardDistance);
+        }
+    }
+
+    // Update squares animation if it has started
+    if (squaresLaunchAnim.isAnimating) {
+        squaresLaunchAnim.animationTime += dt;
+
+        float t = squaresLaunchAnim.animationTime / squaresLaunchAnim.totalAnimationDuration;
+        if (t > 1.0f) t = 1.0f;
+
+        // Interpolate positions
+        leftGuideSquare.localPosition = mix(squaresLaunchAnim.startLeftPos, squaresLaunchAnim.endLeftPos, t);
+        rightGuideSquare.localPosition = mix(squaresLaunchAnim.startRightPos, squaresLaunchAnim.endRightPos, t);
+
+        leftGuideSquare.updateMatrix(true);
+        rightGuideSquare.updateMatrix(true);
+    }
+
+    // Check if the launch animation is complete
     if (patternInfo.launchAnimTime >= LAUNCH_DURATION) {
+        // Animation complete
         respawnPole();
         return;
     }
+}
 
-    // Very obvious launch animation for testing
-    pole.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * 5.0f * dt);  // Much faster
-    pole.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);  // More spinning
+
+
+void BuiltToScaleScene::spawnGuideSquares() {
+    // Position at fixed distance in front of red spring
+    vec3 basePos = springs[2].localPosition + vec3(0.0f, 1.0f, guideForwardOffset);
+
+    // Calculate total movement needed for each square to overlap
+    float totalMovementPerSquare = guideSquareWidth * patternInfo.totalSteps;
+
+    // Set initial positions based on total movement
+    leftGuideSquare.localPosition = basePos + vec3(-totalMovementPerSquare, 0.0f, 0.0f);
+    rightGuideSquare.localPosition = basePos + vec3(totalMovementPerSquare, 0.0f, 0.0f);
+
+    guidesActive = true;
+}
+
+
+
+void BuiltToScaleScene::moveGuideSquares() {
+    if (!guidesActive) return;
+
+    // Move by one cube width each step
+    float stepSize = guideSquareWidth;
+
+    leftGuideSquare.localPosition.x += stepSize;
+    rightGuideSquare.localPosition.x -= stepSize;
+
+    leftGuideSquare.updateMatrix(true);
+    rightGuideSquare.updateMatrix(true);
 }
