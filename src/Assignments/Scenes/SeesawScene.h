@@ -14,14 +14,36 @@ public:
     ptr_vector<AnimationObject> getObjects() override;
 
 private:
-    // Visual objects
+    // Position types
+    enum class Position {
+        FarSide,
+        CloseSide
+    };
+
+    // Pattern definition
+    struct JumpPattern {
+        Position startPos;
+        Position endPos;
+        bool isHighJump;
+    };
+
+    // Character state tracking
+    struct CharacterState {
+        Position currentPos;
+        JumpPattern currentPattern;
+        bool isJumping;
+        float jumpStartTime;
+        bool isHighJump;
+    };
+
+    // Visual objects (existing)
     AnimationObject seesaw;
     AnimationObject playerCharacter;
     AnimationObject npcCharacter;
     AnimationObject feedbackCube;
     AnimationObject playerIndicator;
 
-    // Timing result enums
+    // Timing enums (existing)
     enum class TimingResult {
         None,
         Perfect,
@@ -30,50 +52,81 @@ private:
         Miss
     };
 
-    // Animation state
+    // Game states (modified)
     enum class GameState {
         StartSequence,
         PlayerJumping,
         NPCJumping
     };
-    GameState currentState;
 
+    // Timing/Animation variables (existing + new)
+    const float BASE_BPM = 60.0f;
+    const float CLOSE_POSITION_BPM_MULTIPLIER = 2.0f;
+    const float BASE_BEAT_DURATION = 60.0f / BASE_BPM;
+    const float HIGH_JUMP_PROBABILITY = 0.1f; // 10% chance for high jump
+    const float HIGH_JUMP_MULTIPLIER = 2.0f;
 
-    // Timing/Animation variables
-    const float BPM = 60.0f;  // Even slower tempo
-    const float BEAT_DURATION = 60.0f / BPM;
     float currentTime;
     float sequenceStartTime;
     float jumpHeight = 5.0f;
+    float baseJumpHeight = 5.0f;
     float characterOffset = 0.8f;
+    float closePositionOffset = 0.4f; // Offset for close position
     float characterBaseHeight = 0.4f;
+
+    // Pattern tracking
+    CharacterState playerState;
+    CharacterState npcState;
+    GameState currentState;
+
+    // Position constants
+    //const float FAR_POSITION_OFFSET = 0.8f;
+    //const float CLOSE_POSITION_OFFSET = 0.4f;
+
+    // Existing timing variables
     bool lastInputState = false;
     TimingResult lastTimingResult = TimingResult::None;
     float badTimingAnimationTime = 0.0f;
     const float BAD_ANIMATION_DURATION = 0.5f;
 
-    // Initial positions
+    // Seesaw properties
     vec3 seesawPivotPoint;
     float seesawLength = 6.0f;
     float seesawTiltAngle = 15.0f;
     float currentTiltAngle = 0.0f;
     float tiltSpeed = 360.0f;
-    float beatPulseScale = 1.0f;  // For feedback cube animation
+    float beatPulseScale = 1.0f;
 
-    // Add these variables
-    bool hasInputThisBeat = false;  // Track if player has input this beat
-    float lastFeedbackTime = 0.0f;  // When we last showed feedback
-    const float FEEDBACK_DURATION = 1.0f;  // How long to show feedback
+    // Input tracking
+    bool hasInputThisBeat = false;
+    float lastFeedbackTime = 0.0f;
+    const float FEEDBACK_DURATION = 1.0f;
 
-    // Timing windows (in percentage of beat duration)
-    const float PERFECT_WINDOW = 0.01f;  // ±15% of beat for perfect
-    const float GOOD_WINDOW = 0.05f;     // ±25% of beat for good
-    const float BAD_WINDOW = 0.35f;      // ±35% of beat for bad
+    // Timing windows
+    const float PERFECT_WINDOW = 0.01f;
+    const float GOOD_WINDOW = 0.03f;
+    const float BAD_WINDOW = 0.35f;
 
-    // Helper functions
+    // Position constants
+    const float SEESAW_LENGTH = 12.0f;  // Doubled from original
+    const float FAR_POSITION_OFFSET = SEESAW_LENGTH * 0.4f;  // Far from center
+    const float CLOSE_POSITION_OFFSET = SEESAW_LENGTH * 0.15f; // Much closer to center
+    const float CHARACTER_BASE_HEIGHT = 0.4f;
+
+    // New helper functions for pattern system
+    void selectNewPattern(CharacterState& state);
+    float getCurrentBPM(Position startPos) const;
+    float getJumpDuration(Position startPos) const;
+    vec3 getPositionForCharacter(bool isPlayer, Position pos) const;
+    bool shouldTriggerHighJump() const;
+    void updateCharacterJump(CharacterState& state, AnimationObject& character, float dt);
+
+    // Existing helper functions
     void updateSeesawTilt(float dt);
     void updateCharacterPositions(float dt);
-    vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos);
+    //vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos);
+    vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos);
+
     void initializePositions();
     vec3 calculateSeesawEndPoint(float side, float tiltAngle);
     void handlePlayerInput();
