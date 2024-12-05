@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Scene.h"
 #include "AnimationObject.h"
+#include "AudioSystem.h"
 
 class BuiltToScaleScene : public Scene {
 public:
@@ -67,7 +68,7 @@ private:
     std::vector<SpringAnimation> springAnims;
 
     // Constants
-    const float BOUNCE_DURATION = 0.5f;
+    float BOUNCE_DURATION = 0.6122f;
     const float SPRING_SPACING = 2.0f;
     const float BOUNCE_HEIGHT = 1.0f;
     const int NUM_SPRINGS = 4;
@@ -123,4 +124,10 @@ private:
         vec3 endRightPos;
     } squaresLaunchAnim;
 
+
+    std::string currentSoundId;
+    AudioSystem& audio;
+    void playRandomImpactSound();
+    const std::vector<int> TEMPO_BPM = { 76, 80, 98, 110, 120, 140 };
+    //float bounceDuration;
 };

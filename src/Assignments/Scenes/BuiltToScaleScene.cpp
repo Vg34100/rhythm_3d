@@ -4,7 +4,10 @@
 #include "imgui.h"
 #include <iostream>
 
-BuiltToScaleScene::BuiltToScaleScene() {
+BuiltToScaleScene::BuiltToScaleScene()
+    : audio(AudioSystem::get()) {
+
+
     springs.resize(NUM_SPRINGS);
     springAnims.resize(NUM_SPRINGS);
     for (auto& anim : springAnims) {
@@ -43,6 +46,9 @@ void BuiltToScaleScene::init() {
     rightGuideSquare = AnimationObject(AnimationObjectType::box);
     rightGuideSquare.localScale = vec3(guideSquareWidth);
     rightGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
+
+    audio.loadScene("builttoscale");
+
 }
 
 void BuiltToScaleScene::initSprings() {
@@ -251,6 +257,7 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
             poleAnim.state = PoleState::Normal;
             poleAnim.animationTime = 0.0f;
             moveGuideSquares();
+            playRandomImpactSound();
             poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
             poleAnim.endPos = springs[poleAnim.movingRight ?
                 poleAnim.currentSpringIndex + 1 :
@@ -362,6 +369,7 @@ void BuiltToScaleScene::startNewBounce() {
 
     triggerSpringBounce(poleAnim.currentSpringIndex);
     moveGuideSquares();  // Add this line
+    playRandomImpactSound();
 
     poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
     poleAnim.endPos = springs[poleAnim.movingRight ?
@@ -457,21 +465,39 @@ void BuiltToScaleScene::selectRandomPattern() {
     Pattern patterns[] = { Pattern::ThreeStep, Pattern::FiveStep, Pattern::EightStep };
     patternInfo.type = patterns[rand() % 3];
 
+
+    //// Stop any currently playing sound
+    //if (!currentSoundId.empty()) {
+    //    audio.stopSound(currentSoundId);
+    //}
+
+    // Randomly choose a tempo
+    int randomTempoIndex = rand() % TEMPO_BPM.size();
+    int selectedBPM = TEMPO_BPM[randomTempoIndex];
+    BOUNCE_DURATION = 60.0f / static_cast<float>(selectedBPM); // Calculate bounce duration
+
+    std::cout << "Selected BPM: " << selectedBPM << ", Bounce Duration: " << BOUNCE_DURATION << " seconds" << std::endl;
+
+
+
     switch (patternInfo.type) {
     case Pattern::ThreeStep:
         patternInfo.totalSteps = 3;
         poleAnim.currentSpringIndex = 0;
         poleAnim.movingRight = true;
+        //currentSoundId = ""; // No sound available for ThreeStep
         break;
     case Pattern::FiveStep:
         patternInfo.totalSteps = 5;
         poleAnim.currentSpringIndex = 0;
         poleAnim.movingRight = true;
+        //currentSoundId = "builttoscale_patternB";
         break;
     case Pattern::EightStep:
         patternInfo.totalSteps = 8;
         poleAnim.currentSpringIndex = 3;
         poleAnim.movingRight = false;
+        //currentSoundId = "builttoscale_patternA";
         break;
     }
 
@@ -484,6 +510,11 @@ void BuiltToScaleScene::selectRandomPattern() {
     // Reset spring position
     springs[2].localPosition.z = 0.0f;
     guideSquaresMovedDuringLaunch = false; // Reset the flag when a new pattern is selected
+
+    //// Play the selected sound
+    //if (!currentSoundId.empty()) {
+    //    audio.playSound(currentSoundId);
+    //}
 }
 
 bool BuiltToScaleScene::isSecondToLastStep() const {
@@ -501,6 +532,8 @@ void BuiltToScaleScene::updateSpringRetraction(float dt) {
             patternInfo.springRetracted = true;
             patternInfo.retractAnimTime = RETRACT_DURATION;
             patternInfo.awaitingLaunchInput = true;
+
+            audio.playSound("builttoscale_impactThrow");
         }
 
         // Animate spring retraction in Z direction (backwards)
@@ -626,4 +659,12 @@ void BuiltToScaleScene::moveGuideSquares() {
 
     leftGuideSquare.updateMatrix(true);
     rightGuideSquare.updateMatrix(true);
+}
+
+void BuiltToScaleScene::playRandomImpactSound() {
+    // Randomly select between "impact1" and "impact2"
+    std::string impactSoundId = (rand() % 2 == 0) ? "builttoscale_impactA" : "builttoscale_impactB";
+
+    // Play the selected impact sound
+    audio.playSound(impactSoundId);
 }
