@@ -59,6 +59,9 @@ void SeesawScene::init() {
     playerIndicator.localScale = vec3(0.4f);
     playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
 
+    // Initialize audio
+    audio.loadScene("seesaw");
+
     initializePositions();
 
     // Update all matrices
@@ -206,6 +209,11 @@ void SeesawScene::update(double now, float dt) {
             selectNewPattern(npcState);
             npcState.isJumping = true;
             npcState.jumpStartTime = currentTime;
+
+            // Play initial jump sound
+            bool isQuickJump = (npcState.currentPattern.startPos == Position::CloseSide);
+            audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+
         }
         else {
             // Initial NPC jump to position
@@ -234,6 +242,20 @@ void SeesawScene::update(double now, float dt) {
         float jumpDuration = getJumpDuration(activeState.currentPattern.startPos);
         float phase = (currentTime - sequenceStartTime) / jumpDuration;
 
+        // Play jump sound at the start of the jump
+        if (phase < 0.1f && !activeState.isJumping) {
+            bool isQuickJump = (activeState.currentPattern.startPos == Position::CloseSide);
+
+            if (currentState == GameState::PlayerJumping) {
+                // Player sounds
+                audio.playSound(isQuickJump ? "seesaw_saw_quick" : "seesaw_saw_normal");
+            }
+            else {
+                // NPC sounds
+                audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+            }
+        }
+
         if (phase >= 1.0f) {
             // Complete jump and switch states
             currentState = (currentState == GameState::PlayerJumping) ?
@@ -249,6 +271,15 @@ void SeesawScene::update(double now, float dt) {
             selectNewPattern(nextState);
             nextState.isJumping = true;
             nextState.jumpStartTime = currentTime;
+
+            // Play sound for the new jump
+            bool isQuickJump = (nextState.currentPattern.startPos == Position::CloseSide);
+            if (currentState == GameState::PlayerJumping) {
+                audio.playSound(isQuickJump ? "seesaw_saw_quick" : "seesaw_saw_normal");
+            }
+            else {
+                audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+            }
 
             // Reset player-specific states when switching to player's turn
             if (currentState == GameState::PlayerJumping) {
