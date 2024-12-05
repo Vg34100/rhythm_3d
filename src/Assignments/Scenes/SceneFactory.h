@@ -5,7 +5,9 @@
 enum class SceneType {
     // TODO: Add new Scenes to SceneType
     SingleCube,
-    SingleSphere
+    SingleSphere,
+    TambourineScene,
+    BuiltToScaleScene
 };
 
 std::unique_ptr<Scene> createScene(SceneType type);

@@ -1,0 +1,354 @@
+Scan Report
+===========
+Date: 2024-11-27 17:28:54
+Source Directory: C:\Users\video\The Studio\Downloads\rhythm_3d\src\Assignments
+Output File: C:\Users\video\The Studio\Downloads\rhythm_3d\backend_structure.txt
+
+Ignored Patterns:
+================
+- Lab*
+- ParticleSystemDemo*
+- ProceduralDemos*
+
+Directory Structure:
+===================
+
+Assignments/
+  FinalProject.cpp
+  FinalProject.h
+  Scenes/
+    Scene.h
+    SceneFactory.cpp
+    SceneFactory.h
+    SingleCubeScene.cpp
+    SingleCubeScene.h
+    SingleSphereScene.cpp
+    SingleSphereScene.h
+
+
+File Contents:
+=============
+
+
+--- FinalProject.cpp ---
+// CMPS 4480 Final Project
+// Name: 
+
+#include "FinalProject.h"
+#include "Application.h"
+#include "AnimationObjectRenderer.h"
+#include "GLTFImporter.h"
+#include "InputOutput.h"
+#include "Lighting.h"
+#include "Prompts.h"
+#include "UIHelpers.h"
+#include "Textures.h"
+
+#include <cassert>
+
+#include <glm/gtc/random.hpp>
+
+#include "implot.h"
+#include "Scenes/SceneFactory.h"
+
+
+// Variables for Final Project
+namespace cmps_4480_final_project {
+	// TODO: change this to not be a nullptr
+	const char* yourName = "Pablo Rodriguez";
+
+	// Variables for time and frame progression
+	int numFrames = 120;
+	int currentFrame = 0;
+	int FPS = 24;					// frames per second
+	double SPF = 1.0 / 24;			// seconds per frame (1/FPS)
+	double lastFrameChange = 0;		// timestamp of the last frame change
+	double fixedSecondsElapsed = 0;
+
+	AnimationObject ground;
+}
+
+using namespace cmps_4480_final_project;
+
+namespace cmps_4480_final_project {
+	
+}
+
+void FinalProject::init() {
+    currentSceneType = SceneType::SingleCube;
+    currentScene = createScene(currentSceneType);
+    currentScene->init();
+    lastFrameChange = getTime();
+}
+
+void FinalProject::update() {
+	if (!currentScene) init();
+
+    double now = getTime();
+    float dt = static_cast<float>(now - lastFrameChange);
+    lastFrameChange = now;
+
+    if (currentScene) {
+        currentScene->update(now, dt);
+    }
+}
+
+void FinalProject::render(const mat4& projection, const mat4& view, s_ptr<Framebuffer> framebuffer, bool isShadow) {
+    if (currentScene) {
+        currentScene->render(projection, view, isShadow);
+    }
+}
+
+// Renders the UI controls for the lab.
+void FinalProject::renderUI() {
+    if (ImGui::CollapsingHeader("Scene Selection")) {
+        static const char* scenes[] = {
+            // TODO: Add new Scenes here to select
+            "Single Cube",
+            "Single Sphere"
+        };
+
+        int currentItem = static_cast<int>(currentSceneType);
+        if (ImGui::Combo("Current Scene", &currentItem, scenes, IM_ARRAYSIZE(scenes))) {
+            SceneType newSceneType = static_cast<SceneType>(currentItem);
+            if (newSceneType != currentSceneType) {
+                currentScene.reset();
+                currentScene = createScene(newSceneType);
+                currentScene->init();
+                currentSceneType = newSceneType;
+            }
+        }
+    }
+
+    if (currentScene) {
+        currentScene->renderUI();
+    }
+}
+
+ptr_vector<AnimationObject> FinalProject::getObjects() {
+    if (currentScene) {
+        return currentScene->getObjects();
+    }
+    return {};
+}
+
+--- FinalProject.h ---
+#pragma once
+
+#include "Assignment.h"
+#include "Scenes/SceneFactory.h"
+
+class FinalProject : public Assignment {
+public:
+
+	FinalProject() : Assignment("Final Project", true) { }
+	virtual ~FinalProject() { }
+
+	virtual void init();
+	virtual void update();
+
+	virtual void render(const mat4& projection, const mat4& view, s_ptr<Framebuffer> framebuffer, bool isShadow = false);
+	virtual void renderUI();
+
+	virtual ptr_vector<AnimationObject> getObjects();
+private:
+    std::unique_ptr<Scene> currentScene;
+    SceneType currentSceneType;
+    double lastFrameChange;
+};
+
+--- Scenes\Scene.h ---
+#pragma once
+#include <globals.h>
+#include <AnimationObject.h>
+
+template<typename T>
+using ptr_vector = std::vector<T*>;
+
+class Scene {
+    public:
+        virtual ~Scene() = default;
+        virtual void init() = 0;
+        virtual void update(double now, float dt) = 0;
+        virtual void render(const mat4& projection, const mat4& view, bool isShadow) = 0;
+        virtual void renderUI() = 0;
+        virtual ptr_vector<AnimationObject> getObjects() = 0;
+};
+
+--- Scenes\SceneFactory.cpp ---
+#include "SceneFactory.h"
+#include "SingleCubeScene.h"
+#include "SingleSphereScene.h"
+
+std::unique_ptr<Scene> createScene(SceneType type) {
+    switch (type) {
+        // TODO: Have to add SceneSelector Case for each new Scene
+        case SceneType::SingleCube:
+            return std::make_unique<SingleCubeScene>();
+        case SceneType::SingleSphere:
+            return std::make_unique<SingleSphereScene>();
+        default:
+            return nullptr;
+    }
+}
+
+--- Scenes\SceneFactory.h ---
+#pragma once
+#include <memory>
+#include "Scene.h"
+
+enum class SceneType {
+    // TODO: Add new Scenes to SceneType
+    SingleCube,
+    SingleSphere
+};
+
+std::unique_ptr<Scene> createScene(SceneType type);
+
+--- Scenes\SingleCubeScene.cpp ---
+#include "SingleCubeScene.h"
+#include "AnimationObjectRenderer.h"
+#include "imgui.h"
+
+SingleCubeScene::SingleCubeScene() {}
+
+SingleCubeScene::~SingleCubeScene() {}
+
+void SingleCubeScene::init() {
+    centerCube = AnimationObject(AnimationObjectType::box);
+    centerCube.localPosition = vec3(0.0f);
+    centerCube.localScale = vec3(1.0f);
+    centerCube.color = vec4(1.0f, 0.5f, 0.0f, 1.0f);
+}
+
+void SingleCubeScene::update(double now, float dt) {
+    centerCube.updateMatrix(true);
+}
+
+void SingleCubeScene::render(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    jr.beginBatchRender(centerCube.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        // Bind lighting and set culling
+        if (centerCube.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(centerCube, isShadow);
+    jr.endBatchRender(isShadow);
+}
+
+void SingleCubeScene::renderUI() {
+    if (ImGui::CollapsingHeader("Cube Properties")) {
+        centerCube.renderUI();
+    }
+}
+
+ptr_vector<AnimationObject> SingleCubeScene::getObjects() {
+    return { &centerCube };
+}
+
+
+--- Scenes\SingleCubeScene.h ---
+#pragma once
+
+#include "Scene.h"
+#include "AnimationObject.h"
+
+class SingleCubeScene : public Scene {
+public:
+    SingleCubeScene();
+    ~SingleCubeScene() override;
+
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    AnimationObject centerCube;
+};
+
+--- Scenes\SingleSphereScene.cpp ---
+#include "SingleSphereScene.h"
+#include "AnimationObjectRenderer.h"
+#include "imgui.h"
+
+SingleSphereScene::SingleSphereScene() {}
+
+SingleSphereScene::~SingleSphereScene() {}
+
+void SingleSphereScene::init() {
+    centerSphere = AnimationObject(AnimationObjectType::sphere);
+    centerSphere.localPosition = vec3(0.0f);
+    centerSphere.localScale = vec3(1.0f);
+    centerSphere.color = vec4(0.5f, 1.0f, 0.0f, 1.0f);
+}
+
+void SingleSphereScene::update(double now, float dt) {
+    centerSphere.updateMatrix(true);
+}
+
+void SingleSphereScene::render(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    jr.beginBatchRender(centerSphere.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (centerSphere.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(centerSphere, isShadow);
+    jr.endBatchRender(isShadow);
+}
+
+void SingleSphereScene::renderUI() {
+    if (ImGui::CollapsingHeader("Sphere Properties")) {
+        centerSphere.renderUI();
+    }
+}
+
+ptr_vector<AnimationObject> SingleSphereScene::getObjects() {
+    return { &centerSphere };
+}
+
+
+--- Scenes\SingleSphereScene.h ---
+#pragma once
+
+#include "Scene.h"
+#include "AnimationObject.h"
+
+class SingleSphereScene : public Scene {
+public:
+    SingleSphereScene();
+    ~SingleSphereScene() override;
+
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    AnimationObject centerSphere;
+};
+
