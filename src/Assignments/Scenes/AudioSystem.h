@@ -1,38 +1,10 @@
-// AudioSystem.h
-// This header defines a singleton audio system that manages sound loading and playback
-// using the Windows Multimedia API (winmm.lib). It supports:
-// - Scene-based sound organization
-// - WAV file loading
-// - Multiple simultaneous sound playback
-// - Basic volume control
-// Key components:
-// - WaveSound: Represents a loaded WAV file
-// - AudioScene: Manages sounds for a specific game scene
-// - AudioSystem: Main singleton managing everything
-
 #pragma once
+
 #include <string>
 #include <unordered_map>
 #include <memory>
-#include <Windows.h>
-#include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
-
-class WaveSound {
-public:
-    WaveSound(const std::string& filepath);
-    ~WaveSound() = default;
-
-    bool load();
-    void play();
-    void stop();
-    void setVolume(float volume); // 0.0 to 1.0
-
-private:
-    std::string filepath;
-    bool isLoaded;
-    float volume;
-};
+#include "WaveSound.h"
+#include <miniaudio.h>
 
 class AudioSystem {
 public:
@@ -58,8 +30,10 @@ public:
     bool doesFileExist(const std::string& filepath);
 
 private:
-    AudioSystem() = default;
+    AudioSystem();
     ~AudioSystem();
+    static constexpr size_t MAX_CONCURRENT_SOUNDS = 32; // Limit concurrent sounds
+    size_t currentPlayingSounds = 0;
 
     // Prevent copying
     AudioSystem(const AudioSystem&) = delete;
@@ -74,4 +48,7 @@ private:
 
     // Helper function to build filepath
     std::string buildSoundPath(const std::string& soundId);
+
+    // Shared audio engine
+    ma_engine engine;
 };

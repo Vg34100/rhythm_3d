@@ -7,42 +7,16 @@
 #include <iostream>
 #include <filesystem>
 
-WaveSound::WaveSound(const std::string& filepath)
-    : filepath(filepath)
-    , isLoaded(false)
-    , volume(1.0f) {
-}
-
-bool WaveSound::load() {
-    if (!std::filesystem::exists(filepath)) {
-        std::cout << "File does not exist: " << filepath << std::endl;
-        return false;
+AudioSystem::AudioSystem() {
+    // Initialize the audio engine
+    if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
+        std::cout << "Failed to initialize audio engine." << std::endl;
     }
-    isLoaded = true;
-    return true;
 }
 
-void WaveSound::play() {
-    if (!isLoaded && !load()) return;
-
-    std::cout << "Playing sound: " << filepath << std::endl;
-    // Convert to wide string
-    std::wstring wpath(filepath.begin(), filepath.end());
-    PlaySoundW(wpath.c_str(), NULL, SND_FILENAME | SND_ASYNC);
-}
-
-void WaveSound::stop() {
-    PlaySound(NULL, NULL, 0);
-}
-
-void WaveSound::setVolume(float vol) {
-    volume = vol;
-    // Note: PlaySound doesn't support volume control
-}
-
-// AudioSystem Implementation
 AudioSystem::~AudioSystem() {
     unloadScene();
+    ma_engine_uninit(&engine);
 }
 
 void AudioSystem::loadScene(const std::string& sceneName) {
@@ -55,8 +29,9 @@ void AudioSystem::loadScene(const std::string& sceneName) {
     currentSceneName = sceneName;
 
     // Load all sounds for the scene
+    std::vector<std::string> soundIds;
     if (sceneName == "tambourine") {
-        const std::vector<std::string> soundIds = {
+        soundIds = {
             "tamb_monkey_a",
             "tamb_monkey_a_2",
             "tamb_monkey_ab",
@@ -66,47 +41,33 @@ void AudioSystem::loadScene(const std::string& sceneName) {
             "tamb_player_a_2",
             "tamb_player_ab"
         };
+    }
+    else if (sceneName == "builttoscale") {
+        soundIds = {
+            "builttoscale_impactA",
+            "builttoscale_impactB",
+            "builttoscale_impactThrow"
+        };
+    }
 
-        bool anyLoadFailed = false;
-        for (const auto& soundId : soundIds) {
-            std::string filepath = buildSoundPath(soundId);
-            currentScene->sounds[soundId] = std::make_unique<WaveSound>(filepath);
-            if (!currentScene->sounds[soundId]->load()) {
-                std::cout << "Failed to load sound: " << soundId << std::endl;
-                anyLoadFailed = true;
-            }
-        }
-
-        if (anyLoadFailed) {
-            std::cout << "Some sounds failed to load! Check file paths and formats." << std::endl;
-        }
-        else {
-            std::cout << "All sounds loaded successfully!" << std::endl;
+    bool anyLoadFailed = false;
+    for (const auto& soundId : soundIds) {
+        std::string filepath = buildSoundPath(soundId);
+        currentScene->sounds[soundId] = std::make_unique<WaveSound>(filepath, &engine);
+        if (!currentScene->sounds[soundId]->load()) {
+            std::cout << "Failed to load sound: " << soundId << std::endl;
+            anyLoadFailed = true;
         }
     }
-    if (sceneName == "builttoscale") {
-        const std::vector<std::string> soundIds = {
-            "builttoscale_patternA",
-            "builttoscale_patternB",
-            "builttoscale_patternB_fast",
-            "builttoscale_technical"
-        };
 
-        bool anyLoadFailed = false;
-        for (const auto& soundId : soundIds) {
-            std::string filepath = buildSoundPath(soundId);
-            currentScene->sounds[soundId] = std::make_unique<WaveSound>(filepath);
-            if (!currentScene->sounds[soundId]->load()) {
-                std::cout << "Failed to load sound: " << soundId << std::endl;
-                anyLoadFailed = true;
-            }
-        }
-
-        if (anyLoadFailed) {
-            std::cout << "Some sounds failed to load! Check file paths and formats." << std::endl;
-        }
+    if (anyLoadFailed) {
+        std::cout << "Some sounds failed to load! Check file paths and formats." << std::endl;
+    }
+    else {
+        std::cout << "All sounds loaded successfully!" << std::endl;
     }
 }
+
 
 void AudioSystem::unloadScene() {
     if (currentScene) {
@@ -117,15 +78,11 @@ void AudioSystem::unloadScene() {
 }
 
 void AudioSystem::playSound(const std::string& soundId) {
-    std::cout << "Attempting to play sound: " << soundId << std::endl;
     if (currentScene && currentScene->sounds.count(soundId) > 0) {
         currentScene->sounds[soundId]->play();
-        std::cout << "Playing sound: " << soundId << std::endl;
-    }
-    else {
-        std::cout << "Sound not found: " << soundId << std::endl;
     }
 }
+
 
 void AudioSystem::stopSound(const std::string& soundId) {
     if (currentScene && currentScene->sounds.count(soundId) > 0) {
@@ -182,53 +139,53 @@ std::string AudioSystem::buildSoundPath(const std::string& soundId) {
 
 bool AudioSystem::testAudioPlayback() {
     // First try a simple beep using Windows API
-    std::cout << "Testing basic Windows sound..." << std::endl;
-    Beep(440, 500); // 440Hz for 500ms
+    //std::cout << "Testing basic Windows sound..." << std::endl;
+    //Beep(440, 500); // 440Hz for 500ms
 
-    // Try to play a test WAV file
-    std::string testPath = "test.wav";
-    std::cout << "Attempting to play test WAV at: " << std::filesystem::absolute(testPath).string() << std::endl;
+    //// Try to play a test WAV file
+    //std::string testPath = "test.wav";
+    //std::cout << "Attempting to play test WAV at: " << std::filesystem::absolute(testPath).string() << std::endl;
 
 
-    std::wstring wtestPath(testPath.begin(), testPath.end());
-    bool success = PlaySoundW(wtestPath.c_str(), NULL, SND_FILENAME | SND_SYNC);
-    if (success) {
-        std::cout << "Successfully played test WAV" << std::endl;
-    }
-    else {
-        std::cout << "Failed to play test WAV" << std::endl;
-    }
+    //std::wstring wtestPath(testPath.begin(), testPath.end());
+    //bool success = PlaySoundW(wtestPath.c_str(), NULL, SND_FILENAME | SND_SYNC);
+    //if (success) {
+    //    std::cout << "Successfully played test WAV" << std::endl;
+    //}
+    //else {
+    //    std::cout << "Failed to play test WAV" << std::endl;
+    //}
 
-    return success;
+    return true;
 }
 
 void AudioSystem::debugPrintPaths() {
     // Print current working directory
-    wchar_t wbuffer[MAX_PATH];
-    GetCurrentDirectoryW(MAX_PATH, wbuffer);
-    char buffer[MAX_PATH];
-    wcstombs(buffer, wbuffer, MAX_PATH);
-    std::cout << "Current working directory: " << buffer << std::endl;
+    //wchar_t wbuffer[MAX_PATH];
+    //GetCurrentDirectoryW(MAX_PATH, wbuffer);
+    //char buffer[MAX_PATH];
+    //wcstombs(buffer, wbuffer, MAX_PATH);
+    //std::cout << "Current working directory: " << buffer << std::endl;
 
-    // Print module path (exe location)
-    GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
-    wcstombs(buffer, wbuffer, MAX_PATH);
-    std::cout << "Executable path: " << buffer << std::endl;
+    //// Print module path (exe location)
+    //GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
+    //wcstombs(buffer, wbuffer, MAX_PATH);
+    //std::cout << "Executable path: " << buffer << std::endl;
 
-    // Print assets path
-    std::string assetsPath = "assets/audio/tambourine/";
-    std::cout << "Trying to access assets at: " << std::filesystem::absolute(assetsPath).string() << std::endl;
+    //// Print assets path
+    //std::string assetsPath = "assets/audio/tambourine/";
+    //std::cout << "Trying to access assets at: " << std::filesystem::absolute(assetsPath).string() << std::endl;
 
-    // List all files in current directory
-    std::cout << "\nFiles in current directory:" << std::endl;
-    try {
-        for (const auto& entry : std::filesystem::directory_iterator(".")) {
-            std::cout << entry.path().string() << std::endl;
-        }
-    }
-    catch (const std::filesystem::filesystem_error& e) {
-        std::cout << "Error listing directory: " << e.what() << std::endl;
-    }
+    //// List all files in current directory
+    //std::cout << "\nFiles in current directory:" << std::endl;
+    //try {
+    //    for (const auto& entry : std::filesystem::directory_iterator(".")) {
+    //        std::cout << entry.path().string() << std::endl;
+    //    }
+    //}
+    //catch (const std::filesystem::filesystem_error& e) {
+    //    std::cout << "Error listing directory: " << e.what() << std::endl;
+    //}
 }
 
 bool AudioSystem::doesFileExist(const std::string& filepath) {
