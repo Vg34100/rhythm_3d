@@ -94,12 +94,20 @@ vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
     float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
     float adjustedLength = offset * side;
 
-    return seesawPivotPoint +
-        vec3(cos(glm::radians(currentTiltAngle)) * adjustedLength,
-            sin(glm::radians(currentTiltAngle)) * adjustedLength + characterBaseHeight,
-            0.0f);
-}
+    // More subtle height difference based on position
+    float positionBasedHeight = (pos == Position::FarSide) ?
+        characterBaseHeight * 0.2 - 0.8f :    // Lower at far ends
+        characterBaseHeight * 0.4f;     // Higher near center
 
+    // Calculate position with tilt
+    vec3 basePosition = seesawPivotPoint +
+        vec3(cos(glm::radians(currentTiltAngle)) * adjustedLength,
+            sin(glm::radians(currentTiltAngle)) * adjustedLength,
+            0.0f);
+
+    // Add the height offset after tilt calculation
+    return basePosition + vec3(0.0f, positionBasedHeight, 0.0f);
+}
 
 float SeesawScene::getCurrentBPM(Position startPos) const {
     float bpm = BASE_BPM;
@@ -690,8 +698,32 @@ void SeesawScene::renderUI() {
 //
 //    return glm::mix(startPos, peakPos, sin(modifiedT * M_PI));
 //}
+//vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
+//    // Modified jump curve to spend more time at peak and include horizontal movement
+//    float verticalT;
+//    if (t < 0.3f) {
+//        // Going up (30% of time)
+//        verticalT = t / 0.3f * 0.5f;
+//    }
+//    else if (t < 0.7f) {
+//        // At peak (40% of time)
+//        verticalT = 0.5f;
+//    }
+//    else {
+//        // Going down (30% of time)
+//        verticalT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
+//    }
+//
+//    // Calculate vertical position using sine curve
+//    float height = sin(verticalT * M_PI);
+//
+//    // Smoothly interpolate horizontal position
+//    vec3 horizontalPos = glm::mix(startPos, endPos, t);
+//
+//    // Combine vertical and horizontal movement
+//    return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
+//}
 vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
-    // Modified jump curve to spend more time at peak and include horizontal movement
     float verticalT;
     if (t < 0.3f) {
         // Going up (30% of time)
@@ -703,7 +735,16 @@ vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec
     }
     else {
         // Going down (30% of time)
-        verticalT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
+        float descendT = (t - 0.7f) / 0.3f;
+        verticalT = 0.5f + descendT * 0.5f;
+
+        // Smooth landing without extra drop
+        if (descendT > 0.8f) {
+            float landingT = (descendT - 0.8f) / 0.2f;
+            // Use smoothstep for landing
+            landingT = landingT * landingT * (3.0f - 2.0f * landingT);
+            verticalT = glm::mix(verticalT, 1.0f, landingT);
+        }
     }
 
     // Calculate vertical position using sine curve
@@ -712,7 +753,11 @@ vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec
     // Smoothly interpolate horizontal position
     vec3 horizontalPos = glm::mix(startPos, endPos, t);
 
-    // Combine vertical and horizontal movement
+    // Ensure perfect landing at t = 1.0
+    if (t >= 0.99f) {
+        return endPos;
+    }
+
     return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
 }
 
