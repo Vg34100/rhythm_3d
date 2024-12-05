@@ -182,6 +182,18 @@
     <ClInclude Include="..\src\Assignments\Scenes\SingleSphereScene.h">
       <Filter>Source Files\Assignments\Scenes</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\BuiltToScaleScene.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\WaveSound.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\AudioSystem.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Assignments\Scenes\TambourineScene.h">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Application.cpp">
@@ -359,6 +371,18 @@
       <Filter>Source Files\Assignments\Scenes</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Assignments\Scenes\SingleSphereScene.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\TambourineScene.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\BuiltToScaleScene.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\AudioSystem.cpp">
+      <Filter>Source Files\Assignments\Scenes</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Assignments\Scenes\WaveSound.cpp">
       <Filter>Source Files\Assignments\Scenes</Filter>
     </ClCompile>
   </ItemGroup>
