@@ -140,7 +140,8 @@ void FinalProject::renderUI() {
                 "Single Cube",
                 "Single Sphere",
                 "Tambourine",
-                "Built To Scale"
+                "Built To Scale",
+                "See-Saw"
             };
 
             int currentItem = static_cast<int>(currentSceneType);

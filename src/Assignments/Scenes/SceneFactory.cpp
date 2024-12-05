@@ -3,6 +3,7 @@
 #include "SingleSphereScene.h"
 #include "TambourineScene.h"
 #include "BuiltToScaleScene.h"
+#include "SeesawScene.h"
 
 std::unique_ptr<Scene> createScene(SceneType type) {
     switch (type) {
@@ -13,8 +14,10 @@ std::unique_ptr<Scene> createScene(SceneType type) {
             return std::make_unique<SingleSphereScene>();
         case SceneType::TambourineScene:
             return std::make_unique<TambourineScene>();
-        case SceneType::BuiltToScaleScene:  // Add this case
+        case SceneType::BuiltToScaleScene:
             return std::make_unique<BuiltToScaleScene>();
+        case SceneType::SeeSawScene:
+            return std::make_unique<SeesawScene>();
         default:
             return nullptr;
     }

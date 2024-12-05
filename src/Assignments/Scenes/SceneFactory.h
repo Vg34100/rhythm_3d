@@ -7,7 +7,8 @@ enum class SceneType {
     SingleCube,
     SingleSphere,
     TambourineScene,
-    BuiltToScaleScene
+    BuiltToScaleScene,
+    SeeSawScene
 };
 
 std::unique_ptr<Scene> createScene(SceneType type);
