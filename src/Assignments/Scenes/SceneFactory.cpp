@@ -4,6 +4,7 @@
 #include "TambourineScene.h"
 #include "BuiltToScaleScene.h"
 #include "SeesawScene.h"
+#include "HoleInOneScene.h"
 
 std::unique_ptr<Scene> createScene(SceneType type) {
     switch (type) {
@@ -18,6 +19,8 @@ std::unique_ptr<Scene> createScene(SceneType type) {
             return std::make_unique<BuiltToScaleScene>();
         case SceneType::SeeSawScene:
             return std::make_unique<SeesawScene>();
+        case SceneType::HoleInOneScene:
+            return std::make_unique<HoleInOneScene>();
         default:
             return nullptr;
     }
