@@ -32,16 +32,14 @@ private:
 
         RemixData() : enabled(false),
             timeInCurrentScene(0.0),
-            minSceneTime(25.0),  // 10 seconds minimum
-            maxSceneTime(50.0)   // 20 seconds maximum
+            minSceneTime(25.0),
+            maxSceneTime(50.0)
         {
-            // Initialize available scenes for remix
             availableScenes = {
                 SceneType::TambourineScene,
                 SceneType::BuiltToScaleScene,
                 SceneType::SeeSawScene,
                 SceneType::HoleInOneScene
-                // Can add more scenes here
             };
         }
 
