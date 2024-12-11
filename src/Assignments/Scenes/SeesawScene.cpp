@@ -78,14 +78,7 @@ void SeesawScene::init() {
 
     // ===================================================
 
-
-
-
-
-
-
-
-// ===================================================
+    // ===================================================
     // Initialize player stand model
     npcStandModel = AnimationObject(AnimationObjectType::model);
     npcStandModel.meshName = "../assets/models/seesaw/SS_InspectorLeft.obj";
@@ -128,10 +121,6 @@ void SeesawScene::init() {
 
     // ===================================================
 
-
-
-
-
     // Initialize seesaw
     seesaw = AnimationObject(AnimationObjectType::box);
     seesaw.localScale = vec3(seesawLength, 0.2f, 1.0f);
@@ -170,26 +159,6 @@ void SeesawScene::init() {
     playerIndicator.updateMatrix(true);
 }
 
-//vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
-//    float side = isPlayer ? 1.0f : -1.0f;
-//    float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
-//    float adjustedLength = (seesawLength * 0.5f) - offset;
-//
-//    return seesawPivotPoint +
-//        vec3(cos(glm::radians(currentTiltAngle)) * adjustedLength * side,
-//            sin(glm::radians(currentTiltAngle)) * adjustedLength * side + characterBaseHeight,
-//            0.0f);
-//}
-//vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
-//    float side = isPlayer ? 1.0f : -1.0f;
-//    float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
-//
-//    // Calculate position based on seesaw tilt
-//    float x = offset * side;
-//    float y = sin(glm::radians(currentTiltAngle)) * offset * side + CHARACTER_BASE_HEIGHT;
-//
-//    return seesawPivotPoint + vec3(x, y, 0.0f);
-//}
 vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
     float side = isPlayer ? 1.0f : -1.0f;
     float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
@@ -230,28 +199,6 @@ bool SeesawScene::shouldTriggerHighJump() const {
     return dis(gen) < HIGH_JUMP_PROBABILITY;
 }
 
-//void SeesawScene::selectNewPattern(CharacterState& state) {
-//    // Can only select patterns that start from current position
-//    std::vector<JumpPattern> availablePatterns;
-//
-//    if (state.currentPos == Position::FarSide) {
-//        // From far side, can jump to same far side or to close side
-//        availablePatterns.push_back({ Position::FarSide, Position::FarSide, false });
-//        availablePatterns.push_back({ Position::FarSide, Position::CloseSide, false });
-//    }
-//    else {
-//        // From close side, can jump to same close side or to far side
-//        availablePatterns.push_back({ Position::CloseSide, Position::CloseSide, false });
-//        availablePatterns.push_back({ Position::CloseSide, Position::FarSide, false });
-//    }
-//
-//    // Randomly select from available patterns
-//    int index = rand() % availablePatterns.size();
-//    state.currentPattern = availablePatterns[index];
-//
-//    // Chance for high jump
-//    state.currentPattern.isHighJump = shouldTriggerHighJump();
-//}
 void SeesawScene::selectNewPattern(CharacterState& state) {
     std::vector<JumpPattern> availablePatterns;
 
@@ -420,12 +367,6 @@ void SeesawScene::update(double now, float dt) {
 
 void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& character, float dt) {
     if (!state.isJumping) {
-        // If not jumping, ensure character is at correct position
-        // character.localPosition = getPositionForCharacter(
-        //     &character == &playerCharacter,
-        //     state.currentPos
-        // );
-
         vec3 groundedPos = getPositionForCharacter(
             &character == &playerCharacter,
             state.currentPos
@@ -433,7 +374,6 @@ void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& ch
 
         if (&character == &playerCharacter) {
             character.localPosition = groundedPos;
-// 
             playerStandModel.localPosition = groundedPos;
             playerJumpModel.localPosition = groundedPos;
             playerFallModel.localPosition = groundedPos;
@@ -470,9 +410,7 @@ void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& ch
     // Calculate peak position
     vec3 peakPos = (startPos + endPos) * 0.5f + vec3(0.0f, actualJumpHeight, 0.0f);
 
-    // Update position with new arc movement
-    // character.localPosition = calculateJumpPosition(phase, startPos, endPos, peakPos);
-        // Calculate new position
+    // Calculate new position
     vec3 newPos = calculateJumpPosition(phase, startPos, endPos, peakPos);
 
     // Update position based on whether it's the player or NPC
@@ -524,31 +462,6 @@ void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& ch
     }
 }
 
-//void SeesawScene::updateSeesawTilt(float dt) {
-//    float targetAngle;
-//
-//    // Determine target angle based on current state and positions
-//    if (currentState == GameState::PlayerJumping) {
-//        targetAngle = seesawTiltAngle *
-//            (playerState.currentPattern.startPos == Position::FarSide ? 1.0f : 0.5f);
-//    }
-//    else {
-//        targetAngle = -seesawTiltAngle *
-//            (npcState.currentPattern.startPos == Position::FarSide ? 1.0f : 0.5f);
-//    }
-//
-//    float angleDiff = targetAngle - currentTiltAngle;
-//    float maxChange = tiltSpeed * dt;
-//
-//    if (abs(angleDiff) > maxChange) {
-//        currentTiltAngle += maxChange * (angleDiff > 0 ? 1.0f : -1.0f);
-//    }
-//    else {
-//        currentTiltAngle = targetAngle;
-//    }
-//
-//    seesaw.localRotation.z = currentTiltAngle;
-//}
 void SeesawScene::updateSeesawTilt(float dt) {
     float targetAngle;
     Position activePos = (currentState == GameState::PlayerJumping) ?
@@ -578,63 +491,12 @@ void SeesawScene::updateSeesawTilt(float dt) {
     seesaw.localRotation.z = currentTiltAngle;
 }
 
-//void SeesawScene::handlePlayerInput() {
-//    auto& input = Input::get();
-//    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
-//
-//    if (isLPressed && !lastInputState && !hasInputThisBeat) {
-//        float jumpDuration = getJumpDuration(playerState.currentPattern.startPos);
-//        float phase = (currentTime - sequenceStartTime) / jumpDuration;
-//
-//        // Allow input during end of PlayerJumping and start of NPCJumping
-//        if (currentState == GameState::PlayerJumping ||
-//            (currentState == GameState::NPCJumping && phase < 0.2f)) {
-//
-//            lastTimingResult = checkTiming(phase);
-//            lastFeedbackTime = currentTime;
-//            hasInputThisBeat = true;
-//
-//            // Update feedback cube color
-//            feedbackCube.color = getTimingResultColor(lastTimingResult);
-//
-//            // Visual feedback based on timing
-//            if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
-//                badTimingAnimationTime = BAD_ANIMATION_DURATION;
-//            }
-//            else if (lastTimingResult == TimingResult::Perfect) {
-//                // Add some "success" animation
-//                playerCharacter.color = vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Temporarily gold
-//
-//                // Chance for high jump on perfect timing
-//                if (!playerState.currentPattern.isHighJump && shouldTriggerHighJump()) {
-//                    playerState.currentPattern.isHighJump = true;
-//                }
-//            }
-//            else if (lastTimingResult == TimingResult::Good) {
-//                playerCharacter.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);  // Temporarily green
-//            }
-//        }
-//    }
-//
-//    lastInputState = isLPressed;
-//}
 void SeesawScene::handlePlayerInput() {
     auto& input = Input::get();
     bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
     float jumpDuration = getJumpDuration(playerState.currentPattern.startPos);
     float phase = (currentTime - sequenceStartTime) / jumpDuration;
 
-    //// Handle missed inputs - check if we're past the timing window without input
-    //if (currentState == GameState::PlayerJumping &&
-    //    !hasInputThisBeat && phase > (1.0f - BAD_WINDOW)) {
-    //    // Force a "Miss" result
-    //    lastTimingResult = TimingResult::Miss;
-    //    lastFeedbackTime = currentTime;
-    //    hasInputThisBeat = true;
-    //    badTimingAnimationTime = BAD_ANIMATION_DURATION;
-    //    feedbackCube.color = getTimingResultColor(TimingResult::Miss);
-    //    playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-    //}
     // Only check for missed inputs during player's turn and after descent begins
     if (currentState == GameState::PlayerJumping &&
         !hasInputThisBeat && phase >= 0.85f) { // Starting descent
@@ -680,39 +542,6 @@ void SeesawScene::handlePlayerInput() {
     lastInputState = isLPressed;
 }
 
-//SeesawScene::TimingResult SeesawScene::checkTiming(float phase) {
-//    float timingDiff;
-//    float jumpDuration = getJumpDuration(
-//        currentState == GameState::PlayerJumping ?
-//        playerState.currentPattern.startPos :
-//        npcState.currentPattern.startPos
-//    );
-//
-//    if (currentState == GameState::PlayerJumping) {
-//        // For player jumping, check timing relative to landing (phase 1.0)
-//        timingDiff = abs(1.0f - phase);
-//    }
-//    else if (currentState == GameState::NPCJumping) {
-//        // If we're in early part of NPC jumping, consider it relative to previous landing
-//        if (phase < 0.2f) {
-//            timingDiff = abs(0.0f - phase);  // How far we are from the start of this phase
-//        }
-//        else {
-//            return TimingResult::Miss;  // Too late if we're well into NPC jumping
-//        }
-//    }
-//    else {
-//        return TimingResult::Miss;
-//    }
-//
-//    // Adjust timing windows based on current position
-//    float positionMultiplier = (playerState.currentPattern.startPos == Position::CloseSide) ? 1.5f : 1.0f;
-//
-//    if (timingDiff <= PERFECT_WINDOW * positionMultiplier) return TimingResult::Perfect;
-//    if (timingDiff <= GOOD_WINDOW * positionMultiplier) return TimingResult::Good;
-//    if (timingDiff <= BAD_WINDOW * positionMultiplier) return TimingResult::Bad;
-//    return TimingResult::Miss;
-//}
 SeesawScene::TimingResult SeesawScene::checkTiming(float phase) {
     float timingDiff;
 
@@ -755,66 +584,10 @@ SeesawScene::TimingResult SeesawScene::checkTiming(float phase) {
     return TimingResult::Miss;
 }
 
-//void SeesawScene::updateBadTimingAnimation(float dt) {
-//    if (badTimingAnimationTime > 0) {
-//        badTimingAnimationTime -= dt;
-//
-//        if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
-//            // More obvious shake animation
-//            float shake = sin(badTimingAnimationTime * 30.0f) * 0.3f;
-//            playerCharacter.localPosition.x += shake;
-//            playerCharacter.localRotation.z = shake * 45.0f;  // Add rotation shake
-//            playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red during shake
-//        }
-//    }
-//    else if (lastTimingResult != TimingResult::Perfect && lastTimingResult != TimingResult::Good) {
-//        // Reset character appearance
-//        playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
-//        playerCharacter.localRotation.z = 0.0f;
-//    }
-//}
 void SeesawScene::updateBadTimingAnimation(float dt) {
-    //if (badTimingAnimationTime > 0) {
-    //    badTimingAnimationTime -= dt;
 
-    //    if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
-    //        // More dramatic shake animation
-    //        float shake = sin(badTimingAnimationTime * 30.0f) * 0.5f; // Increased amplitude
-    //        float verticalShake = cos(badTimingAnimationTime * 40.0f) * 0.3f; // Added vertical shake
-
-    //        // Add offset to current position rather than directly modifying x
-    //        vec3 basePos = getPositionForCharacter(true, playerState.currentPos);
-    //        playerCharacter.localPosition = basePos + vec3(shake, verticalShake, 0.0f);
-    //        playerCharacter.localRotation.z = shake * 60.0f;  // More dramatic rotation
-    //        playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red during shake
-    //    }
-    //}
-    //else if (lastTimingResult != TimingResult::Perfect && lastTimingResult != TimingResult::Good) {
-    //    // Reset character appearance and ensure correct position
-    //    playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
-    //    playerCharacter.localRotation.z = 0.0f;
-    //    playerCharacter.localPosition = getPositionForCharacter(true, playerState.currentPos);
-    //}
 }
 
-//void SeesawScene::updateFeedbackCube(float dt) {
-//    float currentJumpDuration = getJumpDuration(
-//        currentState == GameState::PlayerJumping ?
-//        playerState.currentPattern.startPos :
-//        npcState.currentPattern.startPos
-//    );
-//
-//    float phase = (currentTime - sequenceStartTime) / currentJumpDuration;
-//
-//    // Base pulsing effect
-//    beatPulseScale = 1.0f + 0.2f * sin(phase * 2.0f * M_PI);
-//    feedbackCube.localScale = vec3(0.5f * beatPulseScale);
-//
-//    // Only fade the feedback if enough time has passed
-//    if (currentTime - lastFeedbackTime > FEEDBACK_DURATION) {
-//        feedbackCube.color = vec4(0.5f);  // Reset to gray
-//    }
-//}
 void SeesawScene::updateFeedbackCube(float dt) {
     float currentJumpDuration = getJumpDuration(
         currentState == GameState::PlayerJumping ?
@@ -844,11 +617,7 @@ void SeesawScene::render(const mat4& projection, const mat4& view, bool isShadow
     jr.renderBatchWithOwnColor(seesaw, isShadow);
     jr.endBatchRender(isShadow);
 
-    // // Render appropriate player model based on state
-    // jr.beginBatchRender(isPlayerJumping ? playerJumpModel : playerStandModel, false, vec4(1.f), isShadow);
-    // jr.renderBatchWithOwnColor(isPlayerJumping ? playerJumpModel : playerStandModel, isShadow);
-    // jr.endBatchRender(isShadow);
-        // Render appropriate player model based on state
+    // Render appropriate player model based on state
     AnimationObject* currentModel = &playerStandModel;
     switch (currentPlayerModel) {
         case PlayerModelState::Jumping:
@@ -887,8 +656,8 @@ void SeesawScene::render(const mat4& projection, const mat4& view, bool isShadow
 
     // Render characters and indicators
     jr.beginBatchRender(playerCharacter.shapeType, false, vec4(1.f), isShadow);
-    jr.renderBatchWithOwnColor(playerCharacter, isShadow);
-    jr.renderBatchWithOwnColor(npcCharacter, isShadow);
+    // jr.renderBatchWithOwnColor(playerCharacter, isShadow);
+    // jr.renderBatchWithOwnColor(npcCharacter, isShadow);
     jr.renderBatchWithOwnColor(feedbackCube, isShadow);
     jr.renderBatchWithOwnColor(playerIndicator, isShadow);
     jr.endBatchRender(isShadow);
@@ -899,7 +668,6 @@ void SeesawScene::renderUI() {
         ImGui::SliderFloat("Base Jump Height", &baseJumpHeight, 1.0f, 8.0f);
         ImGui::SliderFloat("Seesaw Tilt", &seesawTiltAngle, 5.0f, 30.0f);
         ImGui::SliderFloat("Character Offset", &characterOffset, 0.0f, 2.0f);
-        //ImGui::SliderFloat("Base Height", &CHARACTER_BASE_HEIGHT, 0.0f, 1.0f);
 
         ImGui::Separator();
 
@@ -939,49 +707,6 @@ void SeesawScene::renderUI() {
     }
 }
 
-//vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos) {
-//    // Modified jump curve to spend more time at peak
-//    float modifiedT;
-//    if (t < 0.3f) {
-//        // Going up (30% of time)
-//        modifiedT = t / 0.3f * 0.5f;
-//    }
-//    else if (t < 0.7f) {
-//        // At peak (40% of time)
-//        modifiedT = 0.5f;
-//    }
-//    else {
-//        // Going down (30% of time)
-//        modifiedT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
-//    }
-//
-//    return glm::mix(startPos, peakPos, sin(modifiedT * M_PI));
-//}
-//vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
-//    // Modified jump curve to spend more time at peak and include horizontal movement
-//    float verticalT;
-//    if (t < 0.3f) {
-//        // Going up (30% of time)
-//        verticalT = t / 0.3f * 0.5f;
-//    }
-//    else if (t < 0.7f) {
-//        // At peak (40% of time)
-//        verticalT = 0.5f;
-//    }
-//    else {
-//        // Going down (30% of time)
-//        verticalT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
-//    }
-//
-//    // Calculate vertical position using sine curve
-//    float height = sin(verticalT * M_PI);
-//
-//    // Smoothly interpolate horizontal position
-//    vec3 horizontalPos = glm::mix(startPos, endPos, t);
-//
-//    // Combine vertical and horizontal movement
-//    return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
-//}
 vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
     float verticalT;
     if (t < 0.3f) {
@@ -1020,22 +745,6 @@ vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec
     return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
 }
 
-
-//void SeesawScene::initializePositions() {
-//    seesawPivotPoint = vec3(0.0f);
-//    currentTiltAngle = -seesawTiltAngle;
-//
-//    seesaw.localPosition = seesawPivotPoint;
-//    seesaw.localRotation = vec3(0.0f, 0.0f, currentTiltAngle);
-//
-//    // Set initial positions
-//    playerCharacter.localPosition = getPositionForCharacter(true, Position::FarSide);
-//    npcCharacter.localPosition = vec3(-seesawLength * 0.5f - 2.0f, 2.0f, 0.0f);
-//
-//    // Position player indicator below right side
-//    playerIndicator.localPosition = getPositionForCharacter(true, Position::FarSide) +
-//        vec3(0.0f, -1.0f, 0.0f);
-//}
 void SeesawScene::initializePositions() {
     seesawPivotPoint = vec3(0.0f);
     currentTiltAngle = -seesawTiltAngle;
@@ -1060,35 +769,6 @@ void SeesawScene::initializePositions() {
         vec3(0.0f, -1.0f, 0.0f);
 }
 
-//void SeesawScene::updateCharacterPositions(float dt) {
-//    float phase = (currentTime - sequenceStartTime) / getJumpDuration(
-//        currentState == GameState::PlayerJumping ?
-//        playerState.currentPattern.startPos :
-//        npcState.currentPattern.startPos
-//    );
-//
-//    AnimationObject* jumpingChar = (currentState == GameState::PlayerJumping) ?
-//        &playerCharacter : &npcCharacter;
-//    CharacterState& activeState = (currentState == GameState::PlayerJumping) ?
-//        playerState : npcState;
-//    bool isPlayer = (jumpingChar == &playerCharacter);
-//
-//    vec3 startPos = getPositionForCharacter(isPlayer, activeState.currentPattern.startPos);
-//    float actualJumpHeight = activeState.currentPattern.isHighJump ?
-//        jumpHeight * HIGH_JUMP_MULTIPLIER : jumpHeight;
-//    vec3 peakPos = startPos + vec3(0.0f, actualJumpHeight, 0.0f);
-//    jumpingChar->localPosition = calculateJumpPosition(phase, startPos, peakPos);
-//
-//    // Update grounded character position
-//    AnimationObject* groundedChar = (currentState == GameState::PlayerJumping) ?
-//        &npcCharacter : &playerCharacter;
-//    CharacterState& groundedState = (currentState == GameState::PlayerJumping) ?
-//        npcState : playerState;
-//    groundedChar->localPosition = getPositionForCharacter(
-//        groundedChar == &playerCharacter,
-//        groundedState.currentPos
-//    );
-//}
 void SeesawScene::updateCharacterPositions(float dt) {
     float phase = (currentTime - sequenceStartTime) / getJumpDuration(
         currentState == GameState::PlayerJumping ?
@@ -1130,8 +810,7 @@ vec3 SeesawScene::calculateSeesawEndPoint(float side, float tiltAngle) {
 }
 
 ptr_vector<AnimationObject> SeesawScene::getObjects() {
-    // return { &seesaw, &playerCharacter, &npcCharacter, &feedbackCube, &playerIndicator };
-        ptr_vector<AnimationObject> objects;
+    ptr_vector<AnimationObject> objects;
     objects.push_back(&seesaw);
     objects.push_back(&playerCharacter);
     // Add appropriate player model based on state

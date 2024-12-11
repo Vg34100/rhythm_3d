@@ -39,18 +39,8 @@ void BuiltToScaleScene::init() {
     initPole();
     initInputIndicator();
 
-    //// Initialize guide squares
-    //leftGuideSquare = AnimationObject(AnimationObjectType::box);
-    //leftGuideSquare.localScale = vec3(guideSquareWidth);
-    //leftGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
-
-    //rightGuideSquare = AnimationObject(AnimationObjectType::box);
-    //rightGuideSquare.localScale = vec3(guideSquareWidth);
-    //rightGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
-
-
     // =====================================
-            // First-time initialization of guide widget models
+    // First-time initialization of guide widget models
     leftGuideModel = AnimationObject(AnimationObjectType::model);
     leftGuideModel.meshName = "../assets/models/builttoscale/BTS_PlayerWidgetModel.obj";
 
@@ -71,9 +61,7 @@ void BuiltToScaleScene::init() {
     rightGuideModel.localScale = vec3(1.0f);
     rightGuideModel.color = vec4(1.0f);
     // =====================================
-
-
-        // Initialize background model
+    // Initialize background model
     backgroundModel = AnimationObject(AnimationObjectType::model);
     backgroundModel.meshName = "../assets/models/builttoscale/BTS_BackgroundModel.obj";
 
@@ -89,27 +77,12 @@ void BuiltToScaleScene::init() {
     backgroundModel.color = vec4(1.0f); // White to show texture properly
     backgroundModel.updateMatrix(true);
 
-
-
     audio.loadScene("builttoscale");
-
 }
 
-//void BuiltToScaleScene::initSprings() {
-//    for (int i = 0; i < NUM_SPRINGS; i++) {
-//        springs[i] = AnimationObject(AnimationObjectType::box);
-//        springs[i].localPosition = vec3(i * SPRING_SPACING - (NUM_SPRINGS - 1) * SPRING_SPACING * 0.5f, 0.0f, 0.0f);
-//        springs[i].localScale = vec3(0.7f);  // Cubic springs
-//        springs[i].color = (i == 2) ? vec4(1.0f, 0.0f, 0.0f, 1.0f) : vec4(1.0f);
-//        springs[i].updateMatrix(true);
-//    }
-//}
 void BuiltToScaleScene::initSprings() {
     // Initialize springModels vector to correct size
     springModels.resize(NUM_SPRINGS);
-
-    // Keep springs vector during transition
-    //springs.resize(NUM_SPRINGS);
 
     for (int i = 0; i < NUM_SPRINGS; i++) {
         // Calculate position for both legacy and model springs
@@ -144,22 +117,11 @@ void BuiltToScaleScene::initSprings() {
         springModels[i].color = vec4(1.0f); // White to show texture properly
         springModels[i].updateMatrix(true);
 
-        //// Keep legacy spring initialization during transition
-        //springs[i] = AnimationObject(AnimationObjectType::box);
-        //springs[i].localPosition = springPosition;
-        //springs[i].localScale = vec3(0.7f);
-        //springs[i].color = (i == 2) ? vec4(1.0f, 0.0f, 0.0f, 1.0f) : vec4(1.0f);
-        //springs[i].updateMatrix(true);
     }
 }
 
 void BuiltToScaleScene::initPole() {
     float baseHeight = 0.5f;
-
-    //pole = AnimationObject(AnimationObjectType::box);
-    //pole.localScale = vec3(0.1f, 1.0f, 0.1f);
-    //pole.localRotation = vec3(90.0f, 0.0f, 90.0f);
-    //pole.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     // ===========================================================================
     // Initialize the model pole
@@ -173,23 +135,14 @@ void BuiltToScaleScene::initPole() {
     poleModel.texture = reinterpret_cast<void*>(poleTexture->id);
 
     // Set up model properties
-    //poleModel.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
     poleModel.localPosition = vec3(springModels[0].localPosition.x - 3.0f, baseHeight, 0.0f);
 
     poleModel.localScale = vec3(1.0f);
-    //poleModel.color = vec4(1.0f); // White to show texture properly
-    //poleModel.localRotation = vec3(90.0f, 0.0f, 90.0f); // Match original orientation
     poleModel.updateMatrix(true);
     // ===========================================================================
-
-
-    //pole.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
-
-    poleAnim.currentSpringIndex = 0;  // Explicitly start at first spring
+    poleAnim.currentSpringIndex = 0;
     poleAnim.movingRight = true;
     poleAnim.animationTime = 0.0f;
-    //poleAnim.startPos = springs[0].localPosition;  // Start at first spring
-    //poleAnim.endPos = springs[1].localPosition;    // Bounce to second spring
     poleAnim.startPos = springModels[0].localPosition;  // Start at first spring
     poleAnim.endPos = springModels[1].localPosition;    // Bounce to second spring
     poleAnim.state = PoleState::Normal;
@@ -203,12 +156,11 @@ void BuiltToScaleScene::initPole() {
 
 void BuiltToScaleScene::initInputIndicator() {
     inputIndicator = AnimationObject(AnimationObjectType::box);
-    inputIndicator.localScale = vec3(0.5f);  // Made it bigger
-    //inputIndicator.localPosition = springs[2].localPosition + vec3(0.0f, 2.0f, 0.0f);  // Moved it up
-    inputIndicator.localPosition = springModels[2].localPosition + vec3(0.0f, 2.0f, 0.0f);  // Moved it up
+    inputIndicator.localScale = vec3(0.5f); 
+    inputIndicator.localPosition = springModels[2].localPosition + vec3(0.0f, 2.0f, 0.0f);
 
-    inputIndicator.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);  // White by default
-    inputIndicator.updateMatrix(true);  // Make sure to update the matrix
+    inputIndicator.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    inputIndicator.updateMatrix(true);
 }
 
 void BuiltToScaleScene::update(double now, float dt) {
@@ -223,32 +175,24 @@ void BuiltToScaleScene::update(double now, float dt) {
 
             if (springAnims[i].animationTime >= SpringAnimation::ANIM_DURATION) {
                 springAnims[i].isAnimating = false;
-                //springs[i].localPosition.y = springAnims[i].baseHeight;
                 springModels[i].localPosition.y = springAnims[i].baseHeight;
 
             }
             else {
                 float t = springAnims[i].animationTime / SpringAnimation::ANIM_DURATION;
                 float bounce = sin(t * M_PI) * SpringAnimation::MAX_BOUNCE;
-                //springs[i].localPosition.y = springAnims[i].baseHeight + bounce;
                 springModels[i].localPosition.y = springAnims[i].baseHeight + bounce;
 
             }
         }
-        //springs[i].updateMatrix(true);
         springModels[i].updateMatrix(true);
 
     }
 
-    //pole.updateMatrix(true);
     poleModel.updateMatrix(true); // POLE
     inputIndicator.updateMatrix(true);
 
-    // Add these lines where other matrices are updated
     if (guidesActive) {
-        //leftGuideSquare.updateMatrix(true);
-        //rightGuideSquare.updateMatrix(true);
-
         leftGuideModel.updateMatrix(true);
         rightGuideModel.updateMatrix(true);
     }
@@ -272,14 +216,11 @@ void BuiltToScaleScene::handleInput() {
 
         if (isKPressed && !wasKPressed) {
             float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
-            // Make timing window very obvious for testing
-            //if (normalizedTime >= 0.2f && normalizedTime <= 0.8f) {
             if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
                 std::cout << "Launch initiated!" << std::endl;  // Debug print
                 poleAnim.state = PoleState::Launching;
                 patternInfo.launchAnimTime = 0.0f;
                 patternInfo.awaitingLaunchInput = false;
-                //springs[2].localPosition.z = 0.0f;
                 springModels[2].localPosition.z = 0.0f;
 
             }
@@ -319,7 +260,6 @@ void BuiltToScaleScene::handleInput() {
 
 void BuiltToScaleScene::updateInputIndicator(double now, float dt) {
     if (patternInfo.springRetracted && poleAnim.state == PoleState::Normal) {
-        // Make it more obvious when we can launch
         inputIndicator.color = vec4(1.0f, 0.0f, 1.0f, 1.0f);  // Purple for launch window
         inputIndicator.localScale = vec3(0.4f + 0.2f * sin(now * 10.0f));  // Bigger pulse
     }
@@ -336,14 +276,11 @@ void BuiltToScaleScene::updateInputIndicator(double now, float dt) {
 void BuiltToScaleScene::failPole() {
     poleAnim.state = PoleState::Failed;
     poleAnim.failTime = 0.0f;
-    //poleAnim.startPos = pole.localPosition;
-    //poleAnim.endPos = pole.localPosition + vec3(2.0f, -3.0f, 0.0f);
     poleAnim.startPos = poleModel.localPosition;
     poleAnim.endPos = poleModel.localPosition + vec3(2.0f, -3.0f, 0.0f);
     inputIndicator.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
     // Reset spring position on fail
-    //springs[2].localPosition.z = 0.0f;
     springModels[2].localPosition.z = 0.0f;
     patternInfo.springRetracted = false;
 }
@@ -364,7 +301,7 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
             startNewBounce();
         }
 
-        // Add this check: If we missed the launch window completely, fail
+        // If we missed the launch window completely, fail
         if (patternInfo.springRetracted) {
             float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
 
@@ -375,7 +312,6 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
         }
 
         updateSpringRetraction(dt);
-        //pole.localPosition = calculatePolePosition(poleAnim.animationTime / BOUNCE_DURATION);
         poleModel.localPosition = calculatePolePosition(poleAnim.animationTime / BOUNCE_DURATION);
 
         break;
@@ -386,8 +322,6 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
             respawnPole();
         }
         else {
-            //pole.localPosition = calculateFailPosition(poleAnim.failTime);
-            //pole.localRotation += vec3(10.0f, 0.0f, 720.0f * dt);
             poleModel.localPosition = calculateFailPosition(poleAnim.failTime);
             poleModel.localRotation += vec3(10.0f, 0.0f, 720.0f * dt);
         }
@@ -400,10 +334,6 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
             poleAnim.animationTime = 0.0f;
             moveGuideSquares();
             playRandomImpactSound();
-            //poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
-            //poleAnim.endPos = springs[poleAnim.movingRight ?
-            //    poleAnim.currentSpringIndex + 1 :
-            //    poleAnim.currentSpringIndex - 1].localPosition;
             poleAnim.startPos = springModels[poleAnim.currentSpringIndex].localPosition;
             poleAnim.endPos = springModels[poleAnim.movingRight ?
                 poleAnim.currentSpringIndex + 1 :
@@ -416,25 +346,17 @@ void BuiltToScaleScene::updatePoleAnimation(float dt) {
 
             vec3 startPos, endPos;
             if (poleAnim.movingRight) {
-                //startPos = vec3(springs[0].localPosition.x - 3.0f, baseHeight + 2.0f, 0.0f);
-                //endPos = springs[0].localPosition + vec3(0.0f, baseHeight, 0.0f);
                 startPos = vec3(springModels[0].localPosition.x - 3.0f, baseHeight + 2.0f, 0.0f);
                 endPos = springModels[0].localPosition + vec3(0.0f, baseHeight, 0.0f);
             }
             else {
-                //startPos = vec3(springs[NUM_SPRINGS - 1].localPosition.x + 3.0f, baseHeight + 2.0f, 0.0f);
-                //endPos = springs[NUM_SPRINGS - 1].localPosition + vec3(0.0f, baseHeight, 0.0f);
                 startPos = vec3(springModels[NUM_SPRINGS - 1].localPosition.x + 3.0f, baseHeight + 2.0f, 0.0f);
                 endPos = springModels[NUM_SPRINGS - 1].localPosition + vec3(0.0f, baseHeight, 0.0f);
-
             }
 
             vec3 controlPoint = (startPos + endPos) * 0.5f;
             controlPoint.y += 1.0f;
 
-            //pole.localPosition = (1.0f - t) * (1.0f - t) * startPos +
-            //    2.0f * (1.0f - t) * t * controlPoint +
-            //    t * t * endPos;
             poleModel.localPosition = (1.0f - t) * (1.0f - t) * startPos +
                 2.0f * (1.0f - t) * t * controlPoint +
                 t * t * endPos;
@@ -456,50 +378,22 @@ void BuiltToScaleScene::respawnPole() {
 
     poleAnim.inputRequired = false;
     poleAnim.inputSuccess = false;
-    //pole.localRotation = vec3(90.0f, 0.0f, 90.0f);
     poleModel.localRotation = vec3(0.0f, 0.0f, 0.0f);
 
     float baseHeight = 0.5f;
     // Set position based on pattern's starting point
     if (poleAnim.movingRight) {
-        //pole.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
-        //poleModel.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
-
-        //
-        //poleAnim.startPos = springs[0].localPosition;
-        //poleAnim.endPos = springs[1].localPosition;
-
         poleModel.localPosition = vec3(springModels[0].localPosition.x - 3.0f, baseHeight, 0.0f);
-
 
         poleAnim.startPos = springModels[0].localPosition;
         poleAnim.endPos = springModels[1].localPosition;
     }
     else {
-        //pole.localPosition = vec3(springs[3].localPosition.x + 3.0f, baseHeight, 0.0f);
-        //poleModel.localPosition = vec3(springs[3].localPosition.x + 3.0f, baseHeight, 0.0f);
         poleModel.localPosition = vec3(springModels[3].localPosition.x + 3.0f, baseHeight, 0.0f);
 
-
-
-        //poleAnim.startPos = springs[3].localPosition;
-        //poleAnim.endPos = springs[2].localPosition;
         poleAnim.startPos = springModels[3].localPosition;
         poleAnim.endPos = springModels[2].localPosition;
     }
-    // Reset guides for new pattern
-
-        // Reset guide squares positions
-    //leftGuideSquare.localPosition = squaresLaunchAnim.startLeftPos;
-    //rightGuideSquare.localPosition = squaresLaunchAnim.startRightPos;
-   
-    //leftGuideSquare.localRotation = vec3(0);
-    //rightGuideSquare.localRotation = vec3(0);
-
-    //
-    //leftGuideSquare.updateMatrix(true);
-    //rightGuideSquare.updateMatrix(true);
-
 
     // ==================
     leftGuideModel.localPosition = squaresLaunchAnim.startLeftPos;
@@ -512,9 +406,6 @@ void BuiltToScaleScene::respawnPole() {
     leftGuideModel.updateMatrix(true);
     rightGuideModel.updateMatrix(true);
     // =================
-
-    // Deactivate guides
-    //guidesActive = false;
 
     // Reset squares animation variables
     squaresLaunchAnim.isAnimating = false;
@@ -552,13 +443,9 @@ void BuiltToScaleScene::startNewBounce() {
     }
 
     triggerSpringBounce(poleAnim.currentSpringIndex);
-    moveGuideSquares();  // Add this line
+    moveGuideSquares(); 
     playRandomImpactSound();
 
-    //poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
-    //poleAnim.endPos = springs[poleAnim.movingRight ?
-    //    poleAnim.currentSpringIndex + 1 :
-    //    poleAnim.currentSpringIndex - 1].localPosition;
     poleAnim.startPos = springModels[poleAnim.currentSpringIndex].localPosition;
     poleAnim.endPos = springModels[poleAnim.movingRight ?
         poleAnim.currentSpringIndex + 1 :
@@ -592,13 +479,6 @@ void BuiltToScaleScene::render(const mat4& projection, const mat4& view, bool is
     jr.renderBatchWithOwnColor(backgroundModel, isShadow);
     jr.endBatchRender(isShadow);
 
-    //// Render springs
-    //for (const auto& spring : springs) {
-    //    jr.beginBatchRender(spring.shapeType, false, vec4(1.f), isShadow);
-    //    jr.renderBatchWithOwnColor(spring, isShadow);
-    //    jr.endBatchRender(isShadow);
-    //}
-
     // Render springs using models instead of boxes
     for (const auto& spring : springModels) {
         jr.beginBatchRender(spring, false, vec4(1.f), isShadow);
@@ -606,24 +486,12 @@ void BuiltToScaleScene::render(const mat4& projection, const mat4& view, bool is
         jr.endBatchRender(isShadow);
     }
 
-    // Render pole
-    //jr.beginBatchRender(pole.shapeType, false, vec4(1.f), isShadow);
-    //jr.renderBatchWithOwnColor(pole, isShadow);
-    //jr.endBatchRender(isShadow);
-
     // Render Pole MODEL
-        // Render pole model
     jr.beginBatchRender(poleModel, false, vec4(1.f), isShadow);
     jr.renderBatchWithOwnColor(poleModel, isShadow);
     jr.endBatchRender(isShadow);
 
     if (guidesActive) {
-        //jr.beginBatchRender(leftGuideSquare.shapeType, false, vec4(1.f), isShadow);
-        //jr.renderBatchWithOwnColor(leftGuideSquare, isShadow);
-        //jr.renderBatchWithOwnColor(rightGuideSquare, isShadow);
-        //jr.endBatchRender(isShadow);
-
-
         jr.beginBatchRender(leftGuideModel, false, vec4(1.f), isShadow);
         jr.renderBatchWithOwnColor(leftGuideModel, isShadow);
         jr.endBatchRender(isShadow);
@@ -656,20 +524,12 @@ void BuiltToScaleScene::renderUI() {
 ptr_vector<AnimationObject> BuiltToScaleScene::getObjects() {
     ptr_vector<AnimationObject> objects;
     objects.push_back(&backgroundModel);
-    //for (auto& spring : springs) {
-    //    objects.push_back(&spring);
-    //}
-    // Add spring models instead of legacy springs
     for (auto& spring : springModels) {
         objects.push_back(&spring);
     }
-    //objects.push_back(&pole);
     objects.push_back(&poleModel);
     objects.push_back(&inputIndicator);
     if (guidesActive) {
-        //objects.push_back(&leftGuideSquare);
-        //objects.push_back(&rightGuideSquare);
-
         objects.push_back(&leftGuideModel);
         objects.push_back(&rightGuideModel);
     }
@@ -682,7 +542,6 @@ void BuiltToScaleScene::triggerSpringBounce(int springIndex) {
 
     springAnims[springIndex].isAnimating = true;
     springAnims[springIndex].animationTime = 0.0f;
-    //springAnims[springIndex].baseHeight = springs[springIndex].localPosition.y;
     springAnims[springIndex].baseHeight = springModels[springIndex].localPosition.y;
 
 
@@ -691,12 +550,6 @@ void BuiltToScaleScene::triggerSpringBounce(int springIndex) {
 void BuiltToScaleScene::selectRandomPattern() {
     Pattern patterns[] = { Pattern::ThreeStep, Pattern::FiveStep, Pattern::EightStep };
     patternInfo.type = patterns[rand() % 3];
-
-
-    //// Stop any currently playing sound
-    //if (!currentSoundId.empty()) {
-    //    audio.stopSound(currentSoundId);
-    //}
 
     // Randomly choose a tempo
     int randomTempoIndex = rand() % TEMPO_BPM.size();
@@ -712,19 +565,16 @@ void BuiltToScaleScene::selectRandomPattern() {
         patternInfo.totalSteps = 3;
         poleAnim.currentSpringIndex = 0;
         poleAnim.movingRight = true;
-        //currentSoundId = ""; // No sound available for ThreeStep
         break;
     case Pattern::FiveStep:
         patternInfo.totalSteps = 5;
         poleAnim.currentSpringIndex = 0;
         poleAnim.movingRight = true;
-        //currentSoundId = "builttoscale_patternB";
         break;
     case Pattern::EightStep:
         patternInfo.totalSteps = 8;
         poleAnim.currentSpringIndex = 3;
         poleAnim.movingRight = false;
-        //currentSoundId = "builttoscale_patternA";
         break;
     }
 
@@ -735,15 +585,9 @@ void BuiltToScaleScene::selectRandomPattern() {
     patternInfo.awaitingLaunchInput = false;
 
     // Reset spring position
-    //springs[2].localPosition.z = 0.0f;
     springModels[2].localPosition.z = 0.0f;
 
     guideSquaresMovedDuringLaunch = false; // Reset the flag when a new pattern is selected
-
-    //// Play the selected sound
-    //if (!currentSoundId.empty()) {
-    //    audio.playSound(currentSoundId);
-    //}
 }
 
 bool BuiltToScaleScene::isSecondToLastStep() const {
@@ -767,7 +611,6 @@ void BuiltToScaleScene::updateSpringRetraction(float dt) {
 
         // Animate spring retraction in Z direction (backwards)
         float t = patternInfo.retractAnimTime / RETRACT_DURATION;
-        //springs[2].localPosition.z = -(t * 1.0f); // Move back by 1 unit
         springModels[2].localPosition.z = -(t * 1.0f);
     }
 }
@@ -787,7 +630,6 @@ void BuiltToScaleScene::handleLaunchInput() {
             patternInfo.awaitingLaunchInput = false;
 
             // Reset spring position
-            //springs[2].localPosition.z = 0.0f; // Reset Z position instead of X
             springModels[2].localPosition.z = 0.0f; // Reset Z position instead of X
 
         }
@@ -809,21 +651,14 @@ void BuiltToScaleScene::updateLaunchAnimation(float dt) {
     // Update the pole's launch animation time
     patternInfo.launchAnimTime += dt;
 
-    //// Move the pole forward
-    //pole.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * dt);
-    //pole.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);
-    //pole.updateMatrix(true);
-
     poleModel.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * dt);
     poleModel.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);
     poleModel.updateMatrix(true);
 
     // Calculate when the pole reaches the squares
     if (!squaresLaunchAnim.isAnimating) {
-        //float poleStartZ = springs[2].localPosition.z; // Starting Z position of the pole
         float poleStartZ = springModels[2].localPosition.z; // Starting Z position of the pole
 
-        //float squaresZ = leftGuideSquare.localPosition.z; // Z position of the squares
         float squaresZ = leftGuideModel.localPosition.z; // Z position of the squares
 
         float distanceToSquares = squaresZ - poleStartZ;
@@ -837,13 +672,11 @@ void BuiltToScaleScene::updateLaunchAnimation(float dt) {
             squaresLaunchAnim.totalAnimationDuration = LAUNCH_DURATION - patternInfo.launchAnimTime;
 
             // Record starting positions
-            //squaresLaunchAnim.startLeftPos = leftGuideSquare.localPosition;
-            //squaresLaunchAnim.startRightPos = rightGuideSquare.localPosition;
             squaresLaunchAnim.startLeftPos = leftGuideModel.localPosition;
             squaresLaunchAnim.startRightPos = rightGuideModel.localPosition;
 
             // Set ending positions (move backward along Z-axis)
-            float backwardDistance = 5.0f; // Adjust as desired
+            float backwardDistance = 5.0f;
             squaresLaunchAnim.endLeftPos = squaresLaunchAnim.startLeftPos + vec3(0.0f, 0.0f, backwardDistance);
             squaresLaunchAnim.endRightPos = squaresLaunchAnim.startRightPos + vec3(0.0f, 0.0f, backwardDistance);
         }
@@ -855,13 +688,6 @@ void BuiltToScaleScene::updateLaunchAnimation(float dt) {
 
         float t = squaresLaunchAnim.animationTime / squaresLaunchAnim.totalAnimationDuration;
         if (t > 1.0f) t = 1.0f;
-
-        // Interpolate positions
-        //leftGuideSquare.localPosition = mix(squaresLaunchAnim.startLeftPos, squaresLaunchAnim.endLeftPos, t);
-        //rightGuideSquare.localPosition = mix(squaresLaunchAnim.startRightPos, squaresLaunchAnim.endRightPos, t);
-
-        //leftGuideSquare.updateMatrix(true);
-        //rightGuideSquare.updateMatrix(true);
 
         // ==================
         leftGuideModel.localPosition = mix(squaresLaunchAnim.startLeftPos, squaresLaunchAnim.endLeftPos, t);
@@ -883,17 +709,11 @@ void BuiltToScaleScene::updateLaunchAnimation(float dt) {
 
 void BuiltToScaleScene::spawnGuideSquares() {
     // Position at fixed distance in front of red spring
-    //vec3 basePos = springs[2].localPosition + vec3(0.0f, 1.0f, guideForwardOffset);
     vec3 basePos = springModels[2].localPosition + vec3(0.0f, 1.0f, guideForwardOffset);
 
 
     // Calculate total movement needed for each square to overlap
     float totalMovementPerSquare = guideSquareWidth * patternInfo.totalSteps;
-
-    // Set initial positions based on total movement
-    //leftGuideSquare.localPosition = basePos + vec3(-totalMovementPerSquare, 0.0f, 0.0f);
-    //rightGuideSquare.localPosition = basePos + vec3(totalMovementPerSquare, 0.0f, 0.0f);
-
     // ==============
     leftGuideModel.localPosition = basePos + vec3(-totalMovementPerSquare, 0.0f, 0.0f);
     rightGuideModel.localPosition = basePos + vec3(totalMovementPerSquare, 0.0f, 0.0f);
@@ -909,13 +729,6 @@ void BuiltToScaleScene::moveGuideSquares() {
 
     // Move by one cube width each step
     float stepSize = guideSquareWidth;
-
-    //leftGuideSquare.localPosition.x += stepSize;
-    //rightGuideSquare.localPosition.x -= stepSize;
-
-    //leftGuideSquare.updateMatrix(true);
-    //rightGuideSquare.updateMatrix(true);
-
     // ===============
     leftGuideModel.localPosition.x += stepSize;
     rightGuideModel.localPosition.x -= stepSize;
