@@ -38,7 +38,9 @@ private:
             // Initialize available scenes for remix
             availableScenes = {
                 SceneType::TambourineScene,
-                SceneType::BuiltToScaleScene
+                SceneType::BuiltToScaleScene,
+                SceneType::SeeSawScene,
+                SceneType::HoleInOneScene
                 // Can add more scenes here
             };
         }

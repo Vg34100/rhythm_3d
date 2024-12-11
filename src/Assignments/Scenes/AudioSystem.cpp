@@ -49,6 +49,22 @@ void AudioSystem::loadScene(const std::string& sceneName) {
             "builttoscale_impactThrow"
         };
     }
+    else if (sceneName == "seesaw") {
+        soundIds = {
+            "seesaw_see_normal",
+            "seesaw_saw_normal",
+            "seesaw_see_quick",
+            "seesaw_saw_quick",
+
+        };
+    }
+    else if (sceneName == "holeinone") {
+        soundIds = {
+            "holeinone_monkeythrow",
+            "holeinone_mandrillthrow",
+            "holeinone_ballflying",
+        };
+    }
 
     bool anyLoadFailed = false;
     for (const auto& soundId : soundIds) {

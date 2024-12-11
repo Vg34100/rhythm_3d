@@ -203,8 +203,10 @@
     <ClInclude Include="..\src\Assignments\ProceduralDemos.h" />
     <ClInclude Include="..\src\Assignments\Scenes\AudioSystem.h" />
     <ClInclude Include="..\src\Assignments\Scenes\BuiltToScaleScene.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\HoleInOneScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\Scene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SceneFactory.h" />
+    <ClInclude Include="..\src\Assignments\Scenes\SeesawScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SingleCubeScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\SingleSphereScene.h" />
     <ClInclude Include="..\src\Assignments\Scenes\TambourineScene.h" />
@@ -230,7 +232,9 @@
     <ClCompile Include="..\src\Assignments\ProceduralDemos.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\AudioSystem.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\BuiltToScaleScene.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\HoleInOneScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SceneFactory.cpp" />
+    <ClCompile Include="..\src\Assignments\Scenes\SeesawScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleCubeScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\SingleSphereScene.cpp" />
     <ClCompile Include="..\src\Assignments\Scenes\TambourineScene.cpp" />
