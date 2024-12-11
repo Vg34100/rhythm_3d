@@ -139,11 +139,11 @@ void SeesawScene::init() {
 
     // Initialize characters
     playerCharacter = AnimationObject(AnimationObjectType::box);
-    playerCharacter.localScale = vec3(0.0f);
+    playerCharacter.localScale = vec3(0.8f);
     playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
 
     npcCharacter = AnimationObject(AnimationObjectType::box);
-    npcCharacter.localScale = vec3(0.0f);
+    npcCharacter.localScale = vec3(0.8f);
     npcCharacter.color = vec4(1.0f, 0.4f, 0.4f, 1.0f);
 
     // Initialize feedback cube
@@ -323,10 +323,20 @@ void SeesawScene::update(double now, float dt) {
             if (t < 0.5f) {
                 t = t * 2.0f;
                 npcCharacter.localPosition = glm::mix(startPos, midPoint, t);
+
+                npcStandModel.localPosition = glm::mix(startPos, midPoint, t);
+                npcJumpModel.localPosition = glm::mix(startPos, midPoint, t);
+                npcFallModel.localPosition = glm::mix(startPos, midPoint, t);
+
             }
             else {
                 t = (t - 0.5f) * 2.0f;
                 npcCharacter.localPosition = glm::mix(midPoint, endPos, t);
+
+                npcStandModel.localPosition = glm::mix(midPoint, endPos, t);
+                npcJumpModel.localPosition = glm::mix(midPoint, endPos, t);
+                npcFallModel.localPosition = glm::mix(midPoint, endPos, t);
+
             }
         }
         break;
