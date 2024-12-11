@@ -25,17 +25,23 @@ public:
 
 private:
     // Visual objects
-    AnimationObject monkey;
-    AnimationObject monkeyTambourine;
-    AnimationObject player;
-    AnimationObject playerTambourine;
-    AnimationObject playerIndicator;
+    // AnimationObject monkey;
+    //AnimationObject monkeyTambourine;
+    //AnimationObject player;
+    //AnimationObject playerTambourine;
+    //AnimationObject playerIndicator;
     AnimationObject feedbackCube;
     AnimationObject timingIndicator; // New: shows current beat position
 
 
     AnimationObject monkeyTambourineModel;
     AnimationObject playerTambourineModel;
+
+    AnimationObject monkeyModel;
+    AnimationObject playerModel;
+
+    AnimationObject playerIndicatorModel;
+    AnimationObject backgroundModel;
 
     // Game state
     enum class GameState {

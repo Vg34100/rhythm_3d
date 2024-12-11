@@ -43,6 +43,27 @@ private:
     AnimationObject feedbackCube;
     AnimationObject playerIndicator;
 
+    // ========================
+        // Model objects
+    AnimationObject playerStandModel;  // SS_InspectorRight
+    AnimationObject playerJumpModel;   // SS_InspectorRightJump
+    AnimationObject playerFallModel;   // SS_InspectorRightFall
+   enum class PlayerModelState {
+        Standing,
+        Jumping,
+        Falling
+    };
+
+    PlayerModelState currentPlayerModel = PlayerModelState::Standing;    
+    // ==========================
+
+    AnimationObject npcStandModel;    // SS_InspectorLeft
+    AnimationObject npcJumpModel;     // SS_InspectorLeftJump
+    AnimationObject npcFallModel;     // SS_InspectorLeftFall
+    PlayerModelState currentNPCModel = PlayerModelState::Standing;  // Can reuse same enum
+    // ==========================
+
+
     // Timing enums (existing)
     enum class TimingResult {
         None,

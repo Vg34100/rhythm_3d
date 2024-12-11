@@ -1,6 +1,6 @@
 Scan Report
 ===========
-Date: 2024-11-27 17:28:54
+Date: 2024-12-05 16:39:23
 Source Directory: C:\Users\video\The Studio\Downloads\rhythm_3d\src\Assignments
 Output File: C:\Users\video\The Studio\Downloads\rhythm_3d\backend_structure.txt
 
@@ -17,13 +17,25 @@ Assignments/
   FinalProject.cpp
   FinalProject.h
   Scenes/
+    AudioSystem.cpp
+    AudioSystem.h
+    BuiltToScaleScene.cpp
+    BuiltToScaleScene.h
+    HoleInOneScene.cpp
+    HoleInOneScene.h
     Scene.h
     SceneFactory.cpp
     SceneFactory.h
+    SeesawScene.cpp
+    SeesawScene.h
     SingleCubeScene.cpp
     SingleCubeScene.h
     SingleSphereScene.cpp
     SingleSphereScene.h
+    TambourineScene.cpp
+    TambourineScene.h
+    WaveSound.cpp
+    WaveSound.h
 
 
 File Contents:
@@ -81,12 +93,52 @@ void FinalProject::init() {
     lastFrameChange = getTime();
 }
 
+//void FinalProject::update() {
+//	if (!currentScene) init();
+//
+//    double now = getTime();
+//    float dt = static_cast<float>(now - lastFrameChange);
+//    lastFrameChange = now;
+//
+//    if (currentScene) {
+//        currentScene->update(now, dt);
+//    }
+//}
 void FinalProject::update() {
-	if (!currentScene) init();
+    if (!currentScene) init();
 
     double now = getTime();
     float dt = static_cast<float>(now - lastFrameChange);
     lastFrameChange = now;
+
+    // Update remix mode logic
+    if (remixData.enabled) {
+        remixData.timeInCurrentScene += dt;
+
+        // Check if it's time to switch scenes
+        bool shouldSwitch = false;
+
+        // Force switch if we've exceeded max time
+        if (remixData.timeInCurrentScene >= remixData.maxSceneTime) {
+            shouldSwitch = true;
+        }
+        // Random chance to switch after min time
+        else if (remixData.timeInCurrentScene >= remixData.minSceneTime) {
+            // 10% chance per second to switch
+            shouldSwitch = (rand() % 100) < (10 * dt);
+        }
+
+        if (shouldSwitch) {
+            SceneType newType = remixData.getRandomScene(currentSceneType);
+            if (newType != currentSceneType) {
+                currentScene.reset();
+                currentScene = createScene(newType);
+                currentScene->init();
+                currentSceneType = newType;
+                remixData.timeInCurrentScene = 0.0;
+            }
+        }
+    }
 
     if (currentScene) {
         currentScene->update(now, dt);
@@ -102,20 +154,51 @@ void FinalProject::render(const mat4& projection, const mat4& view, s_ptr<Frameb
 // Renders the UI controls for the lab.
 void FinalProject::renderUI() {
     if (ImGui::CollapsingHeader("Scene Selection")) {
-        static const char* scenes[] = {
-            // TODO: Add new Scenes here to select
-            "Single Cube",
-            "Single Sphere"
-        };
+        // Add Remix Mode controls
+        if (ImGui::TreeNode("Remix Mode Settings")) {
+            // Capture whether the checkbox value changed
+            bool remixEnabledChanged = ImGui::Checkbox("Enable Remix Mode", &remixData.enabled);
 
-        int currentItem = static_cast<int>(currentSceneType);
-        if (ImGui::Combo("Current Scene", &currentItem, scenes, IM_ARRAYSIZE(scenes))) {
-            SceneType newSceneType = static_cast<SceneType>(currentItem);
-            if (newSceneType != currentSceneType) {
-                currentScene.reset();
-                currentScene = createScene(newSceneType);
-                currentScene->init();
-                currentSceneType = newSceneType;
+            // If Remix Mode was just enabled, switch to a random scene immediately
+            if (remixEnabledChanged && remixData.enabled) {
+                SceneType newType = remixData.getRandomScene(currentSceneType);
+                if (newType != currentSceneType) {
+                    currentScene.reset();
+                    currentScene = createScene(newType);
+                    currentScene->init();
+                    currentSceneType = newType;
+                    remixData.timeInCurrentScene = 0.0;
+                }
+            }
+
+            if (remixData.enabled) {
+                // Show current scene time
+                ImGui::Text("Time in current scene: %.1f s", remixData.timeInCurrentScene);
+            }
+
+            ImGui::TreePop();
+        }
+
+        // Only show manual scene selection when Remix Mode is disabled
+        if (!remixData.enabled) {
+            static const char* scenes[] = {
+                "Single Cube",
+                "Single Sphere",
+                "Tambourine",
+                "Built To Scale",
+                "See-Saw",
+                "Hole In One"
+            };
+
+            int currentItem = static_cast<int>(currentSceneType);
+            if (ImGui::Combo("Current Scene", &currentItem, scenes, IM_ARRAYSIZE(scenes))) {
+                SceneType newSceneType = static_cast<SceneType>(currentItem);
+                if (newSceneType != currentSceneType) {
+                    currentScene.reset();
+                    currentScene = createScene(newSceneType);
+                    currentScene->init();
+                    currentSceneType = newSceneType;
+                }
             }
         }
     }
@@ -124,6 +207,7 @@ void FinalProject::renderUI() {
         currentScene->renderUI();
     }
 }
+
 
 ptr_vector<AnimationObject> FinalProject::getObjects() {
     if (currentScene) {
@@ -155,6 +239,1198 @@ private:
     std::unique_ptr<Scene> currentScene;
     SceneType currentSceneType;
     double lastFrameChange;
+
+
+    // Remix mode data
+    struct RemixData {
+        bool enabled;
+        double timeInCurrentScene;
+        double minSceneTime;  // Minimum time before allowing scene switch
+        double maxSceneTime;  // Maximum time before forcing scene switch
+        std::vector<SceneType> availableScenes;
+
+        RemixData() : enabled(false),
+            timeInCurrentScene(0.0),
+            minSceneTime(25.0),  // 10 seconds minimum
+            maxSceneTime(50.0)   // 20 seconds maximum
+        {
+            // Initialize available scenes for remix
+            availableScenes = {
+                SceneType::TambourineScene,
+                SceneType::BuiltToScaleScene
+                // Can add more scenes here
+            };
+        }
+
+        SceneType getRandomScene(SceneType currentType) {
+            if (availableScenes.empty()) return currentType;
+
+            SceneType newType;
+            do {
+                int index = rand() % availableScenes.size();
+                newType = availableScenes[index];
+            } while (newType == currentType && availableScenes.size() > 1);
+
+            return newType;
+        }
+    } remixData;
+
+};
+
+--- Scenes\AudioSystem.cpp ---
+// AudioSystem.cpp
+// Implementation of the Audio System using Windows Multimedia API
+// Each scene manages its own collection of sounds, and the system
+// ensures proper loading/unloading when switching scenes.
+
+#include "AudioSystem.h"
+#include <iostream>
+#include <filesystem>
+
+AudioSystem::AudioSystem() {
+    // Initialize the audio engine
+    if (ma_engine_init(NULL, &engine) != MA_SUCCESS) {
+        std::cout << "Failed to initialize audio engine." << std::endl;
+    }
+}
+
+AudioSystem::~AudioSystem() {
+    unloadScene();
+    ma_engine_uninit(&engine);
+}
+
+void AudioSystem::loadScene(const std::string& sceneName) {
+    std::cout << "Loading audio scene: " << sceneName << std::endl;
+
+    // Unload current scene if any
+    unloadScene();
+
+    currentScene = std::make_unique<AudioScene>();
+    currentSceneName = sceneName;
+
+    // Load all sounds for the scene
+    std::vector<std::string> soundIds;
+    if (sceneName == "tambourine") {
+        soundIds = {
+            "tamb_monkey_a",
+            "tamb_monkey_a_2",
+            "tamb_monkey_ab",
+            "tamb_monkey_happy",
+            "tamb_monkey_squeal",
+            "tamb_player_a",
+            "tamb_player_a_2",
+            "tamb_player_ab"
+        };
+    }
+    else if (sceneName == "builttoscale") {
+        soundIds = {
+            "builttoscale_impactA",
+            "builttoscale_impactB",
+            "builttoscale_impactThrow"
+        };
+    }
+    else if (sceneName == "seesaw") {
+        soundIds = {
+            "seesaw_see_normal",
+            "seesaw_saw_normal",
+            "seesaw_see_quick",
+            "seesaw_saw_quick",
+
+        };
+    }
+
+    bool anyLoadFailed = false;
+    for (const auto& soundId : soundIds) {
+        std::string filepath = buildSoundPath(soundId);
+        currentScene->sounds[soundId] = std::make_unique<WaveSound>(filepath, &engine);
+        if (!currentScene->sounds[soundId]->load()) {
+            std::cout << "Failed to load sound: " << soundId << std::endl;
+            anyLoadFailed = true;
+        }
+    }
+
+    if (anyLoadFailed) {
+        std::cout << "Some sounds failed to load! Check file paths and formats." << std::endl;
+    }
+    else {
+        std::cout << "All sounds loaded successfully!" << std::endl;
+    }
+}
+
+
+void AudioSystem::unloadScene() {
+    if (currentScene) {
+        stopAllSounds();
+        currentScene.reset();
+        currentSceneName.clear();
+    }
+}
+
+void AudioSystem::playSound(const std::string& soundId) {
+    if (currentScene && currentScene->sounds.count(soundId) > 0) {
+        currentScene->sounds[soundId]->play();
+    }
+}
+
+
+void AudioSystem::stopSound(const std::string& soundId) {
+    if (currentScene && currentScene->sounds.count(soundId) > 0) {
+        currentScene->sounds[soundId]->stop();
+    }
+}
+
+void AudioSystem::stopAllSounds() {
+    if (currentScene) {
+        for (auto& [_, sound] : currentScene->sounds) {
+            sound->stop();
+        }
+    }
+}
+
+void AudioSystem::setVolume(const std::string& soundId, float volume) {
+    if (currentScene && currentScene->sounds.count(soundId) > 0) {
+        currentScene->sounds[soundId]->setVolume(volume);
+    }
+}
+
+void AudioSystem::update() {
+    // No update needed for this implementation
+}
+
+std::string AudioSystem::buildSoundPath(const std::string& soundId) {
+    std::string path = "../assets/audio/" + currentSceneName + "/" + soundId + ".wav";
+    std::cout << "Attempting to load sound: " << soundId << std::endl;
+    std::cout << "Full path: " << std::filesystem::absolute(path).string() << std::endl;
+    if (std::filesystem::exists(path)) {
+        std::cout << "File exists!" << std::endl;
+        return path;
+    }
+    else {
+        std::cout << "File not found at: " << path << std::endl;
+        // Try alternative paths
+        std::vector<std::string> altPaths = {
+            "assets/audio/" + currentSceneName + "/" + soundId + ".wav",
+            "../../assets/audio/" + currentSceneName + "/" + soundId + ".wav",
+            "../../../assets/audio/" + currentSceneName + "/" + soundId + ".wav"
+        };
+
+        for (const auto& altPath : altPaths) {
+            std::cout << "Trying alternative path: " << altPath << std::endl;
+            if (std::filesystem::exists(altPath)) {
+                std::cout << "Found file at: " << altPath << std::endl;
+                return altPath;
+            }
+        }
+        std::cout << "Could not find sound file anywhere!" << std::endl;
+        return path; // Return original path even though it doesn't exist
+    }
+}
+
+bool AudioSystem::testAudioPlayback() {
+    // First try a simple beep using Windows API
+    //std::cout << "Testing basic Windows sound..." << std::endl;
+    //Beep(440, 500); // 440Hz for 500ms
+
+    //// Try to play a test WAV file
+    //std::string testPath = "test.wav";
+    //std::cout << "Attempting to play test WAV at: " << std::filesystem::absolute(testPath).string() << std::endl;
+
+
+    //std::wstring wtestPath(testPath.begin(), testPath.end());
+    //bool success = PlaySoundW(wtestPath.c_str(), NULL, SND_FILENAME | SND_SYNC);
+    //if (success) {
+    //    std::cout << "Successfully played test WAV" << std::endl;
+    //}
+    //else {
+    //    std::cout << "Failed to play test WAV" << std::endl;
+    //}
+
+    return true;
+}
+
+void AudioSystem::debugPrintPaths() {
+    // Print current working directory
+    //wchar_t wbuffer[MAX_PATH];
+    //GetCurrentDirectoryW(MAX_PATH, wbuffer);
+    //char buffer[MAX_PATH];
+    //wcstombs(buffer, wbuffer, MAX_PATH);
+    //std::cout << "Current working directory: " << buffer << std::endl;
+
+    //// Print module path (exe location)
+    //GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
+    //wcstombs(buffer, wbuffer, MAX_PATH);
+    //std::cout << "Executable path: " << buffer << std::endl;
+
+    //// Print assets path
+    //std::string assetsPath = "assets/audio/tambourine/";
+    //std::cout << "Trying to access assets at: " << std::filesystem::absolute(assetsPath).string() << std::endl;
+
+    //// List all files in current directory
+    //std::cout << "\nFiles in current directory:" << std::endl;
+    //try {
+    //    for (const auto& entry : std::filesystem::directory_iterator(".")) {
+    //        std::cout << entry.path().string() << std::endl;
+    //    }
+    //}
+    //catch (const std::filesystem::filesystem_error& e) {
+    //    std::cout << "Error listing directory: " << e.what() << std::endl;
+    //}
+}
+
+bool AudioSystem::doesFileExist(const std::string& filepath) {
+    return std::filesystem::exists(filepath);
+}
+
+--- Scenes\AudioSystem.h ---
+#pragma once
+
+#include <string>
+#include <unordered_map>
+#include <memory>
+#include "WaveSound.h"
+#include <miniaudio.h>
+
+class AudioSystem {
+public:
+    static AudioSystem& get() {
+        static AudioSystem instance;
+        return instance;
+    }
+
+    // Scene Management
+    void loadScene(const std::string& sceneName);
+    void unloadScene();
+
+    // Sound Control
+    void playSound(const std::string& soundId);
+    void stopSound(const std::string& soundId);
+    void stopAllSounds();
+    void setVolume(const std::string& soundId, float volume);
+    void update(); // Called every frame to clean up finished sounds
+
+    // Debug helpers
+    bool testAudioPlayback();
+    void debugPrintPaths();
+    bool doesFileExist(const std::string& filepath);
+
+private:
+    AudioSystem();
+    ~AudioSystem();
+    static constexpr size_t MAX_CONCURRENT_SOUNDS = 32; // Limit concurrent sounds
+    size_t currentPlayingSounds = 0;
+
+    // Prevent copying
+    AudioSystem(const AudioSystem&) = delete;
+    AudioSystem& operator=(const AudioSystem&) = delete;
+
+    struct AudioScene {
+        std::unordered_map<std::string, std::unique_ptr<WaveSound>> sounds;
+    };
+
+    std::unique_ptr<AudioScene> currentScene;
+    std::string currentSceneName;
+
+    // Helper function to build filepath
+    std::string buildSoundPath(const std::string& soundId);
+
+    // Shared audio engine
+    ma_engine engine;
+};
+
+
+--- Scenes\BuiltToScaleScene.cpp ---
+﻿#include "BuiltToScaleScene.h"
+#include "AnimationObjectRenderer.h"
+#include "Input.h"
+#include "imgui.h"
+#include <iostream>
+
+BuiltToScaleScene::BuiltToScaleScene()
+    : audio(AudioSystem::get()) {
+
+
+    springs.resize(NUM_SPRINGS);
+    springAnims.resize(NUM_SPRINGS);
+    for (auto& anim : springAnims) {
+        anim.isAnimating = false;
+        anim.animationTime = 0.0f;
+        anim.baseHeight = 0.0f;
+    }
+
+    // Initialize pattern info
+    patternInfo = {
+        Pattern::ThreeStep,  // Start with simplest pattern
+        3,                   // Steps remaining
+        3,                   // Total steps
+        false,              // Spring not retracted
+        0.0f,               // Retract anim time
+        0.0f,               // Launch anim time
+        false               // Not awaiting launch input
+    };
+    guideSquaresMovedDuringLaunch = false;
+    squaresLaunchAnim.isAnimating = false;
+    squaresLaunchAnim.animationTime = 0.0f;
+}
+
+BuiltToScaleScene::~BuiltToScaleScene() {}
+
+void BuiltToScaleScene::init() {
+    initSprings();
+    initPole();
+    initInputIndicator();
+
+    // Initialize guide squares
+    leftGuideSquare = AnimationObject(AnimationObjectType::box);
+    leftGuideSquare.localScale = vec3(guideSquareWidth);
+    leftGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
+
+    rightGuideSquare = AnimationObject(AnimationObjectType::box);
+    rightGuideSquare.localScale = vec3(guideSquareWidth);
+    rightGuideSquare.color = vec4(0.2f, 0.5f, 1.0f, 0.7f);
+
+    audio.loadScene("builttoscale");
+
+}
+
+void BuiltToScaleScene::initSprings() {
+    for (int i = 0; i < NUM_SPRINGS; i++) {
+        springs[i] = AnimationObject(AnimationObjectType::box);
+        springs[i].localPosition = vec3(i * SPRING_SPACING - (NUM_SPRINGS - 1) * SPRING_SPACING * 0.5f, 0.0f, 0.0f);
+        springs[i].localScale = vec3(0.7f);  // Cubic springs
+        springs[i].color = (i == 2) ? vec4(1.0f, 0.0f, 0.0f, 1.0f) : vec4(1.0f);
+        springs[i].updateMatrix(true);
+    }
+}
+
+void BuiltToScaleScene::initPole() {
+    pole = AnimationObject(AnimationObjectType::box);
+    pole.localScale = vec3(0.1f, 1.0f, 0.1f);
+    pole.localRotation = vec3(90.0f, 0.0f, 90.0f);
+    pole.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    float baseHeight = 0.5f;
+    pole.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
+
+    poleAnim.currentSpringIndex = 0;  // Explicitly start at first spring
+    poleAnim.movingRight = true;
+    poleAnim.animationTime = 0.0f;
+    poleAnim.startPos = springs[0].localPosition;  // Start at first spring
+    poleAnim.endPos = springs[1].localPosition;    // Bounce to second spring
+    poleAnim.state = PoleState::Normal;
+    poleAnim.inputRequired = false;
+    poleAnim.inputSuccess = false;
+}
+
+void BuiltToScaleScene::initInputIndicator() {
+    inputIndicator = AnimationObject(AnimationObjectType::box);
+    inputIndicator.localScale = vec3(0.5f);  // Made it bigger
+    inputIndicator.localPosition = springs[2].localPosition + vec3(0.0f, 2.0f, 0.0f);  // Moved it up
+    inputIndicator.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);  // White by default
+    inputIndicator.updateMatrix(true);  // Make sure to update the matrix
+}
+
+void BuiltToScaleScene::update(double now, float dt) {
+    handleInput();
+    updatePoleAnimation(dt);
+    updateInputIndicator(now, dt);
+
+    // Update spring animations
+    for (size_t i = 0; i < springs.size(); i++) {
+        if (springAnims[i].isAnimating) {
+            springAnims[i].animationTime += dt;
+
+            if (springAnims[i].animationTime >= SpringAnimation::ANIM_DURATION) {
+                springAnims[i].isAnimating = false;
+                springs[i].localPosition.y = springAnims[i].baseHeight;
+            }
+            else {
+                float t = springAnims[i].animationTime / SpringAnimation::ANIM_DURATION;
+                float bounce = sin(t * M_PI) * SpringAnimation::MAX_BOUNCE;
+                springs[i].localPosition.y = springAnims[i].baseHeight + bounce;
+            }
+        }
+        springs[i].updateMatrix(true);
+    }
+
+    pole.updateMatrix(true);
+    inputIndicator.updateMatrix(true);
+
+    // Add these lines where other matrices are updated
+    if (guidesActive) {
+        leftGuideSquare.updateMatrix(true);
+        rightGuideSquare.updateMatrix(true);
+    }
+}
+
+void BuiltToScaleScene::handleInput() {
+    if (poleAnim.state != PoleState::Normal) return;
+
+    auto& input = Input::get();
+    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+    bool isKPressed = input.current.keyStates[GLFW_KEY_K] == GLFW_PRESS;
+    static bool wasLPressed = false;
+    static bool wasKPressed = false;
+
+    // If spring is retracted, only allow K press
+    if (patternInfo.springRetracted) {
+        if (isLPressed) {
+            failPole();
+            return;
+        }
+
+        if (isKPressed && !wasKPressed) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+            // Make timing window very obvious for testing
+            //if (normalizedTime >= 0.2f && normalizedTime <= 0.8f) {
+            if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
+                std::cout << "Launch initiated!" << std::endl;  // Debug print
+                poleAnim.state = PoleState::Launching;
+                patternInfo.launchAnimTime = 0.0f;
+                patternInfo.awaitingLaunchInput = false;
+                springs[2].localPosition.z = 0.0f;
+            }
+            else {
+                failPole();
+            }
+        }
+    }
+    else {
+        // Regular bounce logic for non-launch steps
+        bool needsInput = (poleAnim.currentSpringIndex == 1 && poleAnim.movingRight) ||
+            (poleAnim.currentSpringIndex == 3 && !poleAnim.movingRight);
+
+        if (needsInput) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+            if (normalizedTime >= (0.5f - INPUT_WINDOW)) {
+                poleAnim.inputRequired = true;
+            }
+
+            if (poleAnim.inputRequired) {
+                if (isLPressed && !wasLPressed) {
+                    poleAnim.inputSuccess = true;
+                    poleAnim.inputRequired = false;
+                    inputIndicator.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+                }
+            }
+        }
+
+        if (poleAnim.currentSpringIndex == 2 && !poleAnim.inputSuccess) {
+            failPole();
+        }
+    }
+
+    wasLPressed = isLPressed;
+    wasKPressed = isKPressed;
+}
+
+void BuiltToScaleScene::updateInputIndicator(double now, float dt) {
+    if (patternInfo.springRetracted && poleAnim.state == PoleState::Normal) {
+        // Make it more obvious when we can launch
+        inputIndicator.color = vec4(1.0f, 0.0f, 1.0f, 1.0f);  // Purple for launch window
+        inputIndicator.localScale = vec3(0.4f + 0.2f * sin(now * 10.0f));  // Bigger pulse
+    }
+    else if (poleAnim.inputRequired) {
+        inputIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        inputIndicator.localScale = vec3(0.3f + 0.1f * sin(now * 10.0f));
+    }
+    else if (!poleAnim.inputSuccess) {
+        inputIndicator.color = vec4(0.5f, 0.5f, 0.5f, 1.0f);
+        inputIndicator.localScale = vec3(0.3f);
+    }
+}
+
+void BuiltToScaleScene::failPole() {
+    poleAnim.state = PoleState::Failed;
+    poleAnim.failTime = 0.0f;
+    poleAnim.startPos = pole.localPosition;
+    poleAnim.endPos = pole.localPosition + vec3(2.0f, -3.0f, 0.0f);
+    inputIndicator.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+    // Reset spring position on fail
+    springs[2].localPosition.z = 0.0f;
+    patternInfo.springRetracted = false;
+}
+
+vec3 BuiltToScaleScene::calculateFailPosition(float t) {
+    vec3 gravity = vec3(0.0f, -9.81f, 0.0f);
+    vec3 initialVelocity = vec3(3.0f, 2.0f, 0.0f);
+    return poleAnim.startPos + initialVelocity * t + 0.5f * gravity * t * t;
+}
+
+void BuiltToScaleScene::updatePoleAnimation(float dt) {
+    switch (poleAnim.state) {
+    case PoleState::Normal:
+        poleAnim.animationTime += dt;
+
+        // Don't automatically move to next bounce if waiting for launch
+        if (poleAnim.animationTime >= BOUNCE_DURATION && !patternInfo.springRetracted) {
+            startNewBounce();
+        }
+
+        // Add this check: If we missed the launch window completely, fail
+        if (patternInfo.springRetracted) {
+            float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+
+            if (normalizedTime > 2.0f) { // Past the launch window
+                failPole();
+                return;
+            }
+        }
+
+        updateSpringRetraction(dt);
+        pole.localPosition = calculatePolePosition(poleAnim.animationTime / BOUNCE_DURATION);
+        break;
+
+    case PoleState::Failed:
+        poleAnim.failTime += dt;
+        if (poleAnim.failTime >= FAIL_DURATION) {
+            respawnPole();
+        }
+        else {
+            pole.localPosition = calculateFailPosition(poleAnim.failTime);
+            pole.localRotation += vec3(10.0f, 0.0f, 720.0f * dt);
+        }
+        break;
+
+    case PoleState::Respawning:
+        poleAnim.animationTime += dt;
+        if (poleAnim.animationTime >= BOUNCE_DURATION) {
+            poleAnim.state = PoleState::Normal;
+            poleAnim.animationTime = 0.0f;
+            moveGuideSquares();
+            playRandomImpactSound();
+            poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
+            poleAnim.endPos = springs[poleAnim.movingRight ?
+                poleAnim.currentSpringIndex + 1 :
+                poleAnim.currentSpringIndex - 1].localPosition;
+        }
+        else {
+            // Arc coming down onto first/last spring based on direction
+            float t = poleAnim.animationTime / BOUNCE_DURATION;
+            float baseHeight = 0.5f;
+
+            vec3 startPos, endPos;
+            if (poleAnim.movingRight) {
+                startPos = vec3(springs[0].localPosition.x - 3.0f, baseHeight + 2.0f, 0.0f);
+                endPos = springs[0].localPosition + vec3(0.0f, baseHeight, 0.0f);
+            }
+            else {
+                startPos = vec3(springs[NUM_SPRINGS - 1].localPosition.x + 3.0f, baseHeight + 2.0f, 0.0f);
+                endPos = springs[NUM_SPRINGS - 1].localPosition + vec3(0.0f, baseHeight, 0.0f);
+            }
+
+            vec3 controlPoint = (startPos + endPos) * 0.5f;
+            controlPoint.y += 1.0f;
+
+            pole.localPosition = (1.0f - t) * (1.0f - t) * startPos +
+                2.0f * (1.0f - t) * t * controlPoint +
+                t * t * endPos;
+        }
+        break;
+
+
+    case PoleState::Launching:
+        std::cout << "Updating launch animation" << std::endl;  // Debug print
+        updateLaunchAnimation(dt);
+        break;
+    }
+}
+
+void BuiltToScaleScene::respawnPole() {
+    poleAnim.state = PoleState::Respawning;
+    poleAnim.animationTime = 0.0f;
+    selectRandomPattern(); // Choose new pattern on respawn
+
+    poleAnim.inputRequired = false;
+    poleAnim.inputSuccess = false;
+    pole.localRotation = vec3(90.0f, 0.0f, 90.0f);
+
+    float baseHeight = 0.5f;
+    // Set position based on pattern's starting point
+    if (poleAnim.movingRight) {
+        pole.localPosition = vec3(springs[0].localPosition.x - 3.0f, baseHeight, 0.0f);
+        poleAnim.startPos = springs[0].localPosition;
+        poleAnim.endPos = springs[1].localPosition;
+    }
+    else {
+        pole.localPosition = vec3(springs[3].localPosition.x + 3.0f, baseHeight, 0.0f);
+        poleAnim.startPos = springs[3].localPosition;
+        poleAnim.endPos = springs[2].localPosition;
+    }
+    // Reset guides for new pattern
+
+        // Reset guide squares positions
+    leftGuideSquare.localPosition = squaresLaunchAnim.startLeftPos;
+    rightGuideSquare.localPosition = squaresLaunchAnim.startRightPos;
+   
+    leftGuideSquare.localRotation = vec3(0);
+    rightGuideSquare.localRotation = vec3(0);
+
+    
+    leftGuideSquare.updateMatrix(true);
+    rightGuideSquare.updateMatrix(true);
+
+    // Deactivate guides
+    //guidesActive = false;
+
+    // Reset squares animation variables
+    squaresLaunchAnim.isAnimating = false;
+    squaresLaunchAnim.animationTime = 0.0f;
+    spawnGuideSquares();
+    guideSquaresMovedDuringLaunch = false; // Reset the flag for the new pattern
+}
+
+void BuiltToScaleScene::startNewBounce() {
+    // Don't auto-bounce if we're on the final step waiting for launch
+    if (patternInfo.stepsRemaining == 1 && patternInfo.springRetracted) {
+        return;  // Wait for player input instead of bouncing
+    }
+
+    // Don't bounce if we've used all steps
+    if (patternInfo.stepsRemaining <= 0) {
+        failPole();
+        return;
+    }
+
+    poleAnim.animationTime = 0.0f;
+    patternInfo.stepsRemaining--;
+
+    if (poleAnim.movingRight) {
+        poleAnim.currentSpringIndex++;
+        if (poleAnim.currentSpringIndex >= NUM_SPRINGS - 1) {
+            poleAnim.movingRight = false;
+        }
+    }
+    else {
+        poleAnim.currentSpringIndex--;
+        if (poleAnim.currentSpringIndex <= 0) {
+            poleAnim.movingRight = true;
+        }
+    }
+
+    triggerSpringBounce(poleAnim.currentSpringIndex);
+    moveGuideSquares();  // Add this line
+    playRandomImpactSound();
+
+    poleAnim.startPos = springs[poleAnim.currentSpringIndex].localPosition;
+    poleAnim.endPos = springs[poleAnim.movingRight ?
+        poleAnim.currentSpringIndex + 1 :
+        poleAnim.currentSpringIndex - 1].localPosition;
+}
+
+
+vec3 BuiltToScaleScene::calculatePolePosition(float t) {
+    float oneMinusT = 1.0f - t;
+
+    // Get base positions with correct height for start and end
+    float baseHeight = 0.5f;  // Height of springs (their scale is 0.5f)
+    vec3 heightAdjustedStart = poleAnim.startPos + vec3(0.0f, baseHeight, 0.0f);
+    vec3 heightAdjustedEnd = poleAnim.endPos + vec3(0.0f, baseHeight, 0.0f);
+
+    // Calculate control point for the arc, adding bounce height on top of base height
+    vec3 controlPoint = (heightAdjustedStart + heightAdjustedEnd) * 0.5f;
+    controlPoint.y += BOUNCE_HEIGHT;
+
+    // Calculate final position using quadratic bezier
+    return oneMinusT * oneMinusT * heightAdjustedStart +
+        2.0f * oneMinusT * t * controlPoint +
+        t * t * heightAdjustedEnd;
+}
+
+void BuiltToScaleScene::render(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    // Render springs
+    for (const auto& spring : springs) {
+        jr.beginBatchRender(spring.shapeType, false, vec4(1.f), isShadow);
+        jr.renderBatchWithOwnColor(spring, isShadow);
+        jr.endBatchRender(isShadow);
+    }
+
+    // Render pole
+    jr.beginBatchRender(pole.shapeType, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(pole, isShadow);
+    jr.endBatchRender(isShadow);
+
+    if (guidesActive) {
+        jr.beginBatchRender(leftGuideSquare.shapeType, false, vec4(1.f), isShadow);
+        jr.renderBatchWithOwnColor(leftGuideSquare, isShadow);
+        jr.renderBatchWithOwnColor(rightGuideSquare, isShadow);
+        jr.endBatchRender(isShadow);
+    }
+}
+
+void BuiltToScaleScene::renderUI() {
+    if (ImGui::CollapsingHeader("Built to Scale Debug")) {
+        const char* patternNames[] = { "Three Step", "Five Step", "Eight Step" };
+        ImGui::Text("Pattern: %s", patternNames[static_cast<int>(patternInfo.type)]);
+        ImGui::Text("Steps Remaining: %d/%d", patternInfo.stepsRemaining, patternInfo.totalSteps);
+        ImGui::Text("Spring Retracted: %s", patternInfo.springRetracted ? "Yes" : "No");
+        ImGui::Text("Current Spring Index: %d", poleAnim.currentSpringIndex);
+        ImGui::Text("Moving Right: %s", poleAnim.movingRight ? "Yes" : "No");
+        ImGui::Text("Animation Time: %.2f", poleAnim.animationTime);
+        ImGui::Text("State: %s",
+            poleAnim.state == PoleState::Normal ? "Normal" :
+            poleAnim.state == PoleState::Failed ? "Failed" :
+            poleAnim.state == PoleState::Launching ? "Launching" : "Respawning");
+        if (poleAnim.state == PoleState::Failed) {
+            ImGui::Text("Fail Time: %.2f", poleAnim.failTime);
+        }
+    }
+}
+
+ptr_vector<AnimationObject> BuiltToScaleScene::getObjects() {
+    ptr_vector<AnimationObject> objects;
+    for (auto& spring : springs) {
+        objects.push_back(&spring);
+    }
+    objects.push_back(&pole);
+    objects.push_back(&inputIndicator);
+    if (guidesActive) {
+        objects.push_back(&leftGuideSquare);
+        objects.push_back(&rightGuideSquare);
+    }
+    return objects;
+}
+
+void BuiltToScaleScene::triggerSpringBounce(int springIndex) {
+    // Only animate the red spring (index 2) if input was successful
+    if (springIndex == 2 && !poleAnim.inputSuccess) return;
+
+    springAnims[springIndex].isAnimating = true;
+    springAnims[springIndex].animationTime = 0.0f;
+    springAnims[springIndex].baseHeight = springs[springIndex].localPosition.y;
+}
+
+void BuiltToScaleScene::selectRandomPattern() {
+    Pattern patterns[] = { Pattern::ThreeStep, Pattern::FiveStep, Pattern::EightStep };
+    patternInfo.type = patterns[rand() % 3];
+
+
+    //// Stop any currently playing sound
+    //if (!currentSoundId.empty()) {
+    //    audio.stopSound(currentSoundId);
+    //}
+
+    // Randomly choose a tempo
+    int randomTempoIndex = rand() % TEMPO_BPM.size();
+    int selectedBPM = TEMPO_BPM[randomTempoIndex];
+    BOUNCE_DURATION = 60.0f / static_cast<float>(selectedBPM); // Calculate bounce duration
+
+    std::cout << "Selected BPM: " << selectedBPM << ", Bounce Duration: " << BOUNCE_DURATION << " seconds" << std::endl;
+
+
+
+    switch (patternInfo.type) {
+    case Pattern::ThreeStep:
+        patternInfo.totalSteps = 3;
+        poleAnim.currentSpringIndex = 0;
+        poleAnim.movingRight = true;
+        //currentSoundId = ""; // No sound available for ThreeStep
+        break;
+    case Pattern::FiveStep:
+        patternInfo.totalSteps = 5;
+        poleAnim.currentSpringIndex = 0;
+        poleAnim.movingRight = true;
+        //currentSoundId = "builttoscale_patternB";
+        break;
+    case Pattern::EightStep:
+        patternInfo.totalSteps = 8;
+        poleAnim.currentSpringIndex = 3;
+        poleAnim.movingRight = false;
+        //currentSoundId = "builttoscale_patternA";
+        break;
+    }
+
+    patternInfo.stepsRemaining = patternInfo.totalSteps;
+    patternInfo.springRetracted = false;
+    patternInfo.retractAnimTime = 0.0f;
+    patternInfo.launchAnimTime = 0.0f;
+    patternInfo.awaitingLaunchInput = false;
+
+    // Reset spring position
+    springs[2].localPosition.z = 0.0f;
+    guideSquaresMovedDuringLaunch = false; // Reset the flag when a new pattern is selected
+
+    //// Play the selected sound
+    //if (!currentSoundId.empty()) {
+    //    audio.playSound(currentSoundId);
+    //}
+}
+
+bool BuiltToScaleScene::isSecondToLastStep() const {
+    return patternInfo.stepsRemaining == 2;
+}
+
+bool BuiltToScaleScene::isFinalStep() const {
+    return patternInfo.stepsRemaining == 1;
+}
+
+void BuiltToScaleScene::updateSpringRetraction(float dt) {
+    if (isSecondToLastStep() && !patternInfo.springRetracted) {
+        patternInfo.retractAnimTime += dt;
+        if (patternInfo.retractAnimTime >= RETRACT_DURATION) {
+            patternInfo.springRetracted = true;
+            patternInfo.retractAnimTime = RETRACT_DURATION;
+            patternInfo.awaitingLaunchInput = true;
+
+            audio.playSound("builttoscale_impactThrow");
+        }
+
+        // Animate spring retraction in Z direction (backwards)
+        float t = patternInfo.retractAnimTime / RETRACT_DURATION;
+        springs[2].localPosition.z = -(t * 1.0f); // Move back by 1 unit
+    }
+}
+
+void BuiltToScaleScene::handleLaunchInput() {
+    if (!patternInfo.awaitingLaunchInput) return;
+
+    auto& input = Input::get();
+    bool isKPressed = input.current.keyStates[GLFW_KEY_K] == GLFW_PRESS;
+    static bool wasKPressed = false;
+
+    if (isKPressed && !wasKPressed) {
+        float normalizedTime = poleAnim.animationTime / BOUNCE_DURATION;
+        if (normalizedTime >= 0.3f && normalizedTime <= 0.7f) {
+            poleAnim.state = PoleState::Launching;
+            patternInfo.launchAnimTime = 0.0f;
+            patternInfo.awaitingLaunchInput = false;
+
+            // Reset spring position
+            springs[2].localPosition.z = 0.0f; // Reset Z position instead of X
+        }
+        else {
+            failPole();
+        }
+    }
+
+    wasKPressed = isKPressed;
+}
+
+void BuiltToScaleScene::updateLaunchAnimation(float dt) {
+    if (poleAnim.state != PoleState::Launching) return;
+    if (!guideSquaresMovedDuringLaunch) {
+        // We already moved the guide squares to overlap; now start the push animation
+        moveGuideSquares();
+        guideSquaresMovedDuringLaunch = true;
+    }
+    // Update the pole's launch animation time
+    patternInfo.launchAnimTime += dt;
+
+    // Move the pole forward
+    pole.localPosition += vec3(0.0f, 0.0f, LAUNCH_SPEED * dt);
+    pole.localRotation += vec3(0.0f, 0.0f, 2880.0f * dt);
+    pole.updateMatrix(true);
+
+    // Calculate when the pole reaches the squares
+    if (!squaresLaunchAnim.isAnimating) {
+        float poleStartZ = springs[2].localPosition.z; // Starting Z position of the pole
+        float squaresZ = leftGuideSquare.localPosition.z; // Z position of the squares
+        float distanceToSquares = squaresZ - poleStartZ;
+        float timeToReachSquares = distanceToSquares / LAUNCH_SPEED;
+
+        // Start the squares' animation when the pole reaches them
+        if (patternInfo.launchAnimTime >= timeToReachSquares) {
+            // Initialize squares animation
+            squaresLaunchAnim.isAnimating = true;
+            squaresLaunchAnim.animationTime = 0.0f;
+            squaresLaunchAnim.totalAnimationDuration = LAUNCH_DURATION - patternInfo.launchAnimTime;
+
+            // Record starting positions
+            squaresLaunchAnim.startLeftPos = leftGuideSquare.localPosition;
+            squaresLaunchAnim.startRightPos = rightGuideSquare.localPosition;
+
+            // Set ending positions (move backward along Z-axis)
+            float backwardDistance = 5.0f; // Adjust as desired
+            squaresLaunchAnim.endLeftPos = squaresLaunchAnim.startLeftPos + vec3(0.0f, 0.0f, backwardDistance);
+            squaresLaunchAnim.endRightPos = squaresLaunchAnim.startRightPos + vec3(0.0f, 0.0f, backwardDistance);
+        }
+    }
+
+    // Update squares animation if it has started
+    if (squaresLaunchAnim.isAnimating) {
+        squaresLaunchAnim.animationTime += dt;
+
+        float t = squaresLaunchAnim.animationTime / squaresLaunchAnim.totalAnimationDuration;
+        if (t > 1.0f) t = 1.0f;
+
+        // Interpolate positions
+        leftGuideSquare.localPosition = mix(squaresLaunchAnim.startLeftPos, squaresLaunchAnim.endLeftPos, t);
+        rightGuideSquare.localPosition = mix(squaresLaunchAnim.startRightPos, squaresLaunchAnim.endRightPos, t);
+
+        leftGuideSquare.updateMatrix(true);
+        rightGuideSquare.updateMatrix(true);
+    }
+
+    // Check if the launch animation is complete
+    if (patternInfo.launchAnimTime >= LAUNCH_DURATION) {
+        // Animation complete
+        respawnPole();
+        return;
+    }
+}
+
+
+
+void BuiltToScaleScene::spawnGuideSquares() {
+    // Position at fixed distance in front of red spring
+    vec3 basePos = springs[2].localPosition + vec3(0.0f, 1.0f, guideForwardOffset);
+
+    // Calculate total movement needed for each square to overlap
+    float totalMovementPerSquare = guideSquareWidth * patternInfo.totalSteps;
+
+    // Set initial positions based on total movement
+    leftGuideSquare.localPosition = basePos + vec3(-totalMovementPerSquare, 0.0f, 0.0f);
+    rightGuideSquare.localPosition = basePos + vec3(totalMovementPerSquare, 0.0f, 0.0f);
+
+    guidesActive = true;
+}
+
+
+
+void BuiltToScaleScene::moveGuideSquares() {
+    if (!guidesActive) return;
+
+    // Move by one cube width each step
+    float stepSize = guideSquareWidth;
+
+    leftGuideSquare.localPosition.x += stepSize;
+    rightGuideSquare.localPosition.x -= stepSize;
+
+    leftGuideSquare.updateMatrix(true);
+    rightGuideSquare.updateMatrix(true);
+}
+
+void BuiltToScaleScene::playRandomImpactSound() {
+    // Randomly select between "impact1" and "impact2"
+    std::string impactSoundId = (rand() % 2 == 0) ? "builttoscale_impactA" : "builttoscale_impactB";
+
+    // Play the selected impact sound
+    audio.playSound(impactSoundId);
+}
+
+
+--- Scenes\BuiltToScaleScene.h ---
+﻿#pragma once
+#include "Scene.h"
+#include "AnimationObject.h"
+#include "AudioSystem.h"
+
+class BuiltToScaleScene : public Scene {
+public:
+    BuiltToScaleScene();
+    ~BuiltToScaleScene() override;
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    // Visual objects
+    std::vector<AnimationObject> springs;
+    AnimationObject pole;
+    AnimationObject inputIndicator;
+
+    // Animation states
+    enum class PoleState {
+        Normal,
+        Failed,
+        Respawning,
+        Launching    // New state for launch animation
+    };
+
+    // Pattern types
+    enum class Pattern {
+        ThreeStep,   // 0->1->2
+        FiveStep,    // 0->1->2->3->2
+        EightStep    // 3->2->1->0->1->2->3->4->3
+    };
+
+    struct {
+        int currentSpringIndex;
+        bool movingRight;
+        float animationTime;
+        vec3 startPos;
+        vec3 endPos;
+        PoleState state;
+        float failTime;
+        bool inputRequired;
+        bool inputSuccess;
+    } poleAnim;
+
+    struct SpringAnimation {
+        bool isAnimating;
+        float animationTime;
+        float baseHeight;
+        static constexpr float ANIM_DURATION = 0.2f;
+        static constexpr float MAX_BOUNCE = 0.2f;
+    };
+
+    // New pattern tracking
+    struct {
+        Pattern type;
+        int stepsRemaining;
+        int totalSteps;
+        bool springRetracted;      // Is red spring pulled back
+        float retractAnimTime;     // For spring retraction animation
+        float launchAnimTime;      // For launch animation
+        bool awaitingLaunchInput;  // Waiting for K press
+    } patternInfo;
+
+    std::vector<SpringAnimation> springAnims;
+
+    // Constants
+    float BOUNCE_DURATION = 0.6122f;
+    const float SPRING_SPACING = 2.0f;
+    const float BOUNCE_HEIGHT = 1.0f;
+    const int NUM_SPRINGS = 4;
+    const float FAIL_DURATION = 1.0f;
+    const float INPUT_WINDOW = 0.50f;
+    const float POLE_Z_OFFSET = 0.0f;
+
+    // New constants
+    const float RETRACT_DURATION = 0.3f;
+    const float LAUNCH_DURATION = 0.5f;
+    const float LAUNCH_SPEED = 15.0f;
+
+    // Helper functions
+    void initSprings();
+    void initPole();
+    void initInputIndicator();
+    void updatePoleAnimation(float dt);
+    vec3 calculatePolePosition(float t);
+    void startNewBounce();
+    void handleInput();
+    void failPole();
+    void respawnPole();
+    vec3 calculateFailPosition(float t);
+    void updateInputIndicator(double now, float dt);
+    void triggerSpringBounce(int springIndex);
+
+    // New helper functions
+    void selectRandomPattern();
+    void updateSpringRetraction(float dt);
+    void handleLaunchInput();
+    void updateLaunchAnimation(float dt);
+    bool isSecondToLastStep() const;
+    bool isFinalStep() const;
+    bool guideSquaresMovedDuringLaunch;
+
+    AnimationObject leftGuideSquare;
+    AnimationObject rightGuideSquare;
+    float guideSquareWidth = 1.0f;      // Width of each guide square
+    float guideForwardOffset = 5.0f;     // Fixed distance in front of springs
+    bool guidesActive = false;           // Track if guides are currently in use
+    // Add these to your private function declarations
+    void spawnGuideSquares();
+    void moveGuideSquares();
+
+    // Add these to your private member variables
+    struct {
+        bool isAnimating;
+        float animationTime;
+        float totalAnimationDuration;
+        vec3 startLeftPos;
+        vec3 startRightPos;
+        vec3 endLeftPos;
+        vec3 endRightPos;
+    } squaresLaunchAnim;
+
+
+    std::string currentSoundId;
+    AudioSystem& audio;
+    void playRandomImpactSound();
+    const std::vector<int> TEMPO_BPM = { 76, 80, 98, 110, 120, 140 };
+    //float bounceDuration;
+};
+
+--- Scenes\HoleInOneScene.cpp ---
+
+Error reading file: 'utf-8' codec can't decode byte 0xb0 in position 14528: invalid start byte
+
+
+--- Scenes\HoleInOneScene.h ---
+#pragma once
+#include "Scene.h"
+#include "AnimationObject.h"
+#include "AudioSystem.h"
+
+class HoleInOneScene : public Scene {
+public:
+    HoleInOneScene();
+    ~HoleInOneScene() override;
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    // Characters
+    AnimationObject player;      // Main player (white box)
+    AnimationObject golfClub;    // Player's golf club
+    AnimationObject monkey;      // Monkey character (brown box)
+    AnimationObject mandrill;    // Mandrill character (gray box)
+    AnimationObject island;      // Destination island
+    AnimationObject golfBall;    // The golf ball being thrown/hit
+
+    // UI Elements
+    AnimationObject playerIndicator;  // Yellow indicator above player
+    AnimationObject feedbackCube;     // Feedback cube for timing
+
+    // Game State
+    enum class GameState {
+        Inactive,       // Waiting between patterns
+        MonkeyPrep,     // Monkey preparing throw (1 beat)
+        MonkeyThrow,    // Ball in air towards player (1 beat)
+        BallFlight,     // Ball flying to island (2 beats)
+        MandrillPrep1,  // First prep beat
+        MandrillPrep2,  // Second prep beat
+        MandrillPrep3,  // Third prep beat
+        MandrillThrow   // Throw and instant hit
+    };
+
+    struct ThrowPattern {
+        bool isMandrill;
+        int waitBeats;  // 0-2 beats between patterns
+    };
+
+    // Timing and Animation
+    const float BPM = 115.0f;
+    const float BEAT_DURATION = 60.0f / BPM;
+    const float PREP_COLOR_INTENSITY = 0.3f;     // Color change during prep
+    const float BALL_OFFSET = 0.6f;              // How far in front of thrower the ball appears
+    const float PLAYER_BALL_OFFSET = 0.8f;       // Where the ball should be relative to player for hitting
+    const float GOLF_CLUB_LENGTH = 1.2f;         // Length of the golf club
+    const float GOLF_CLUB_THICKNESS = 0.15f;     // Thickness of the golf club
+    const float MONKEY_THROW_HEIGHT = 3.0f;      // Height of monkey's throw arc
+    const float BALL_FLIGHT_HEIGHT = 5.0f;       // Height of ball flight to island
+
+    GameState currentState;
+    float currentBeat;
+    float stateStartTime;
+    float currentTime;
+
+    ThrowPattern currentPattern;
+    vec3 ballStartPos;
+    vec3 ballEndPos;
+
+    // Animation variables
+    float golfClubAngle;        // Current angle of the golf club
+    bool swingInProgress;       // Whether a swing is currently happening
+    float swingProgress;        // Progress of current swing (0 to 1)
+
+    // Helper methods
+    void updateBallPosition(float t);
+    ThrowPattern selectNextPattern();
+    void initializePositions();
+    void updateGolfClub(float dt);
+    vec3 calculateArcPosition(const vec3& start, const vec3& end, float height, float t);
+    void startNewPattern();
+    vec3 getThrowPosition(bool isMandrill) const;  // Gets position in front of thrower
+    vec3 getPlayerHitPosition() const;             // Gets position where player should hit ball
 };
 
 --- Scenes\Scene.h ---
@@ -179,6 +1455,10 @@ class Scene {
 #include "SceneFactory.h"
 #include "SingleCubeScene.h"
 #include "SingleSphereScene.h"
+#include "TambourineScene.h"
+#include "BuiltToScaleScene.h"
+#include "SeesawScene.h"
+#include "HoleInOneScene.h"
 
 std::unique_ptr<Scene> createScene(SceneType type) {
     switch (type) {
@@ -187,6 +1467,14 @@ std::unique_ptr<Scene> createScene(SceneType type) {
             return std::make_unique<SingleCubeScene>();
         case SceneType::SingleSphere:
             return std::make_unique<SingleSphereScene>();
+        case SceneType::TambourineScene:
+            return std::make_unique<TambourineScene>();
+        case SceneType::BuiltToScaleScene:
+            return std::make_unique<BuiltToScaleScene>();
+        case SceneType::SeeSawScene:
+            return std::make_unique<SeesawScene>();
+        case SceneType::HoleInOneScene:
+            return std::make_unique<HoleInOneScene>();
         default:
             return nullptr;
     }
@@ -200,10 +1488,1069 @@ std::unique_ptr<Scene> createScene(SceneType type) {
 enum class SceneType {
     // TODO: Add new Scenes to SceneType
     SingleCube,
-    SingleSphere
+    SingleSphere,
+    TambourineScene,
+    BuiltToScaleScene,
+    SeeSawScene,
+    HoleInOneScene
 };
 
 std::unique_ptr<Scene> createScene(SceneType type);
+
+--- Scenes\SeesawScene.cpp ---
+#include "SeesawScene.h"
+#include "AnimationObjectRenderer.h"
+#include "imgui.h"
+#include "Input.h"
+#include <iostream>
+#include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/fast_exponential.hpp>
+#include <random>
+
+SeesawScene::SeesawScene()
+    : currentState(GameState::StartSequence)
+    , currentTime(0)
+    , sequenceStartTime(0)
+    , audio(AudioSystem::get()) {
+
+    // Initialize character states
+    playerState = {
+        Position::FarSide,  // start position
+        {Position::FarSide, Position::FarSide, false},  // initial pattern
+        false,  // not jumping
+        0.0f,   // jump start time
+        false   // not high jump
+    };
+
+    npcState = {
+        Position::FarSide,
+        {Position::FarSide, Position::FarSide, false},
+        false,
+        0.0f,
+        false
+    };
+}
+
+SeesawScene::~SeesawScene() {}
+
+void SeesawScene::init() {
+    // Initialize seesaw
+    seesaw = AnimationObject(AnimationObjectType::box);
+    seesaw.localScale = vec3(seesawLength, 0.2f, 1.0f);
+    seesaw.color = vec4(0.8f, 0.6f, 0.4f, 1.0f);
+
+    // Initialize characters
+    playerCharacter = AnimationObject(AnimationObjectType::box);
+    playerCharacter.localScale = vec3(0.8f);
+    playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
+
+    npcCharacter = AnimationObject(AnimationObjectType::box);
+    npcCharacter.localScale = vec3(0.8f);
+    npcCharacter.color = vec4(1.0f, 0.4f, 0.4f, 1.0f);
+
+    // Initialize feedback cube
+    feedbackCube = AnimationObject(AnimationObjectType::box);
+    feedbackCube.localScale = vec3(0.5f);
+    feedbackCube.color = vec4(0.5f);  // Gray
+    feedbackCube.localPosition = seesawPivotPoint + vec3(0.0f, 1.0f, 0.0f);
+
+    // Initialize player indicator
+    playerIndicator = AnimationObject(AnimationObjectType::box);
+    playerIndicator.localScale = vec3(0.4f);
+    playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);  // Yellow
+
+    // Initialize audio
+    audio.loadScene("seesaw");
+
+    initializePositions();
+
+    // Update all matrices
+    seesaw.updateMatrix(true);
+    playerCharacter.updateMatrix(true);
+    npcCharacter.updateMatrix(true);
+    feedbackCube.updateMatrix(true);
+    playerIndicator.updateMatrix(true);
+}
+
+//vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
+//    float side = isPlayer ? 1.0f : -1.0f;
+//    float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
+//    float adjustedLength = (seesawLength * 0.5f) - offset;
+//
+//    return seesawPivotPoint +
+//        vec3(cos(glm::radians(currentTiltAngle)) * adjustedLength * side,
+//            sin(glm::radians(currentTiltAngle)) * adjustedLength * side + characterBaseHeight,
+//            0.0f);
+//}
+//vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
+//    float side = isPlayer ? 1.0f : -1.0f;
+//    float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
+//
+//    // Calculate position based on seesaw tilt
+//    float x = offset * side;
+//    float y = sin(glm::radians(currentTiltAngle)) * offset * side + CHARACTER_BASE_HEIGHT;
+//
+//    return seesawPivotPoint + vec3(x, y, 0.0f);
+//}
+vec3 SeesawScene::getPositionForCharacter(bool isPlayer, Position pos) const {
+    float side = isPlayer ? 1.0f : -1.0f;
+    float offset = (pos == Position::FarSide) ? FAR_POSITION_OFFSET : CLOSE_POSITION_OFFSET;
+    float adjustedLength = offset * side;
+
+    // More subtle height difference based on position
+    float positionBasedHeight = (pos == Position::FarSide) ?
+        characterBaseHeight * 0.2 - 0.8f :    // Lower at far ends
+        characterBaseHeight * 0.4f;     // Higher near center
+
+    // Calculate position with tilt
+    vec3 basePosition = seesawPivotPoint +
+        vec3(cos(glm::radians(currentTiltAngle)) * adjustedLength,
+            sin(glm::radians(currentTiltAngle)) * adjustedLength,
+            0.0f);
+
+    // Add the height offset after tilt calculation
+    return basePosition + vec3(0.0f, positionBasedHeight, 0.0f);
+}
+
+float SeesawScene::getCurrentBPM(Position startPos) const {
+    float bpm = BASE_BPM;
+    if (startPos == Position::CloseSide) {
+        bpm *= CLOSE_POSITION_BPM_MULTIPLIER;
+    }
+    return bpm;
+}
+
+float SeesawScene::getJumpDuration(Position startPos) const {
+    return 60.0f / getCurrentBPM(startPos);
+}
+
+bool SeesawScene::shouldTriggerHighJump() const {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
+    return dis(gen) < HIGH_JUMP_PROBABILITY;
+}
+
+//void SeesawScene::selectNewPattern(CharacterState& state) {
+//    // Can only select patterns that start from current position
+//    std::vector<JumpPattern> availablePatterns;
+//
+//    if (state.currentPos == Position::FarSide) {
+//        // From far side, can jump to same far side or to close side
+//        availablePatterns.push_back({ Position::FarSide, Position::FarSide, false });
+//        availablePatterns.push_back({ Position::FarSide, Position::CloseSide, false });
+//    }
+//    else {
+//        // From close side, can jump to same close side or to far side
+//        availablePatterns.push_back({ Position::CloseSide, Position::CloseSide, false });
+//        availablePatterns.push_back({ Position::CloseSide, Position::FarSide, false });
+//    }
+//
+//    // Randomly select from available patterns
+//    int index = rand() % availablePatterns.size();
+//    state.currentPattern = availablePatterns[index];
+//
+//    // Chance for high jump
+//    state.currentPattern.isHighJump = shouldTriggerHighJump();
+//}
+void SeesawScene::selectNewPattern(CharacterState& state) {
+    std::vector<JumpPattern> availablePatterns;
+
+    if (state.currentPos == Position::FarSide) {
+        // From far side, can jump to same far side or to close side
+        availablePatterns.push_back({ Position::FarSide, Position::FarSide, false });
+        availablePatterns.push_back({ Position::FarSide, Position::CloseSide, false });
+    }
+    else {
+        // From close side, can jump to same close side or to far side
+        availablePatterns.push_back({ Position::CloseSide, Position::CloseSide, false });
+        availablePatterns.push_back({ Position::CloseSide, Position::FarSide, false });
+    }
+
+    // Weighted random selection to favor pattern changes
+    float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    if (r < 0.7f) { // 70% chance to change position
+        for (const auto& pattern : availablePatterns) {
+            if (pattern.endPos != state.currentPos) {
+                state.currentPattern = pattern;
+                break;
+            }
+        }
+    }
+    else {
+        // 30% chance to stay at current position
+        for (const auto& pattern : availablePatterns) {
+            if (pattern.endPos == state.currentPos) {
+                state.currentPattern = pattern;
+                break;
+            }
+        }
+    }
+
+    // Chance for high jump
+    state.currentPattern.isHighJump = shouldTriggerHighJump();
+}
+
+void SeesawScene::update(double now, float dt) {
+    currentTime += dt;
+
+    handlePlayerInput();
+    updateBadTimingAnimation(dt);
+    updateFeedbackCube(dt);
+
+    switch (currentState) {
+    case GameState::StartSequence: {
+        float phase = (currentTime - sequenceStartTime) / BASE_BEAT_DURATION;
+        if (phase >= 1.0f) {
+            currentState = GameState::NPCJumping;
+            sequenceStartTime = currentTime;
+            // Initialize first NPC pattern
+            selectNewPattern(npcState);
+            npcState.isJumping = true;
+            npcState.jumpStartTime = currentTime;
+
+            // Play initial jump sound
+            bool isQuickJump = (npcState.currentPattern.startPos == Position::CloseSide);
+            audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+
+        }
+        else {
+            // Initial NPC jump to position
+            vec3 startPos = npcCharacter.localPosition;
+            vec3 endPos = getPositionForCharacter(false, Position::FarSide);
+            vec3 midPoint = (startPos + endPos) * 0.5f + vec3(0.0f, 2.0f, 0.0f);
+
+            float t = phase;
+            if (t < 0.5f) {
+                t = t * 2.0f;
+                npcCharacter.localPosition = glm::mix(startPos, midPoint, t);
+            }
+            else {
+                t = (t - 0.5f) * 2.0f;
+                npcCharacter.localPosition = glm::mix(midPoint, endPos, t);
+            }
+        }
+        break;
+    }
+
+    case GameState::PlayerJumping:
+    case GameState::NPCJumping: {
+        CharacterState& activeState = (currentState == GameState::PlayerJumping) ? playerState : npcState;
+        AnimationObject& activeChar = (currentState == GameState::PlayerJumping) ? playerCharacter : npcCharacter;
+
+        float jumpDuration = getJumpDuration(activeState.currentPattern.startPos);
+        float phase = (currentTime - sequenceStartTime) / jumpDuration;
+
+        // Play jump sound at the start of the jump
+        if (phase < 0.1f && !activeState.isJumping) {
+            bool isQuickJump = (activeState.currentPattern.startPos == Position::CloseSide);
+
+            if (currentState == GameState::PlayerJumping) {
+                // Player sounds
+                audio.playSound(isQuickJump ? "seesaw_saw_quick" : "seesaw_saw_normal");
+            }
+            else {
+                // NPC sounds
+                audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+            }
+        }
+
+        if (phase >= 1.0f) {
+            // Complete jump and switch states
+            currentState = (currentState == GameState::PlayerJumping) ?
+                GameState::NPCJumping : GameState::PlayerJumping;
+            sequenceStartTime = currentTime;
+
+            // Update position and select new pattern
+            activeState.currentPos = activeState.currentPattern.endPos;
+            activeState.isJumping = false;
+
+            // Only select new pattern for the character about to jump
+            CharacterState& nextState = (currentState == GameState::PlayerJumping) ? playerState : npcState;
+            selectNewPattern(nextState);
+            nextState.isJumping = true;
+            nextState.jumpStartTime = currentTime;
+
+            // Play sound for the new jump
+            bool isQuickJump = (nextState.currentPattern.startPos == Position::CloseSide);
+            if (currentState == GameState::PlayerJumping) {
+                audio.playSound(isQuickJump ? "seesaw_saw_quick" : "seesaw_saw_normal");
+            }
+            else {
+                audio.playSound(isQuickJump ? "seesaw_see_quick" : "seesaw_see_normal");
+            }
+
+            // Reset player-specific states when switching to player's turn
+            if (currentState == GameState::PlayerJumping) {
+                hasInputThisBeat = false;
+                playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
+            }
+        }
+
+        updateSeesawTilt(dt);
+        updateCharacterJump(activeState, activeChar, dt);
+        break;
+    }
+    }
+
+    // Update matrices
+    seesaw.updateMatrix(true);
+    playerCharacter.updateMatrix(true);
+    npcCharacter.updateMatrix(true);
+    feedbackCube.updateMatrix(true);
+    playerIndicator.updateMatrix(true);
+}
+
+void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& character, float dt) {
+    if (!state.isJumping) {
+        // If not jumping, ensure character is at correct position
+        character.localPosition = getPositionForCharacter(
+            &character == &playerCharacter,
+            state.currentPos
+        );
+        return;
+    }
+
+    float jumpDuration = getJumpDuration(state.currentPattern.startPos);
+    float phase = (currentTime - state.jumpStartTime) / jumpDuration;
+
+    // Calculate start and end positions
+    vec3 startPos = getPositionForCharacter(
+        &character == &playerCharacter,
+        state.currentPattern.startPos
+    );
+
+    vec3 endPos = getPositionForCharacter(
+        &character == &playerCharacter,
+        state.currentPattern.endPos
+    );
+
+    // Adjust jump height based on pattern
+    float actualJumpHeight = state.currentPattern.isHighJump ?
+        baseJumpHeight * HIGH_JUMP_MULTIPLIER : baseJumpHeight;
+
+    // Calculate peak position
+    vec3 peakPos = (startPos + endPos) * 0.5f + vec3(0.0f, actualJumpHeight, 0.0f);
+
+    // Update position with new arc movement
+    character.localPosition = calculateJumpPosition(phase, startPos, endPos, peakPos);
+}
+
+//void SeesawScene::updateSeesawTilt(float dt) {
+//    float targetAngle;
+//
+//    // Determine target angle based on current state and positions
+//    if (currentState == GameState::PlayerJumping) {
+//        targetAngle = seesawTiltAngle *
+//            (playerState.currentPattern.startPos == Position::FarSide ? 1.0f : 0.5f);
+//    }
+//    else {
+//        targetAngle = -seesawTiltAngle *
+//            (npcState.currentPattern.startPos == Position::FarSide ? 1.0f : 0.5f);
+//    }
+//
+//    float angleDiff = targetAngle - currentTiltAngle;
+//    float maxChange = tiltSpeed * dt;
+//
+//    if (abs(angleDiff) > maxChange) {
+//        currentTiltAngle += maxChange * (angleDiff > 0 ? 1.0f : -1.0f);
+//    }
+//    else {
+//        currentTiltAngle = targetAngle;
+//    }
+//
+//    seesaw.localRotation.z = currentTiltAngle;
+//}
+void SeesawScene::updateSeesawTilt(float dt) {
+    float targetAngle;
+    Position activePos = (currentState == GameState::PlayerJumping) ?
+        playerState.currentPattern.startPos :
+        npcState.currentPattern.startPos;
+
+    // Adjust tilt angle based on position
+    float tiltMultiplier = (activePos == Position::FarSide) ? 1.0f : 0.6f;
+
+    if (currentState == GameState::PlayerJumping) {
+        targetAngle = seesawTiltAngle * tiltMultiplier;
+    }
+    else {
+        targetAngle = -seesawTiltAngle * tiltMultiplier;
+    }
+
+    float angleDiff = targetAngle - currentTiltAngle;
+    float maxChange = tiltSpeed * dt;
+
+    if (abs(angleDiff) > maxChange) {
+        currentTiltAngle += maxChange * (angleDiff > 0 ? 1.0f : -1.0f);
+    }
+    else {
+        currentTiltAngle = targetAngle;
+    }
+
+    seesaw.localRotation.z = currentTiltAngle;
+}
+
+//void SeesawScene::handlePlayerInput() {
+//    auto& input = Input::get();
+//    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+//
+//    if (isLPressed && !lastInputState && !hasInputThisBeat) {
+//        float jumpDuration = getJumpDuration(playerState.currentPattern.startPos);
+//        float phase = (currentTime - sequenceStartTime) / jumpDuration;
+//
+//        // Allow input during end of PlayerJumping and start of NPCJumping
+//        if (currentState == GameState::PlayerJumping ||
+//            (currentState == GameState::NPCJumping && phase < 0.2f)) {
+//
+//            lastTimingResult = checkTiming(phase);
+//            lastFeedbackTime = currentTime;
+//            hasInputThisBeat = true;
+//
+//            // Update feedback cube color
+//            feedbackCube.color = getTimingResultColor(lastTimingResult);
+//
+//            // Visual feedback based on timing
+//            if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
+//                badTimingAnimationTime = BAD_ANIMATION_DURATION;
+//            }
+//            else if (lastTimingResult == TimingResult::Perfect) {
+//                // Add some "success" animation
+//                playerCharacter.color = vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Temporarily gold
+//
+//                // Chance for high jump on perfect timing
+//                if (!playerState.currentPattern.isHighJump && shouldTriggerHighJump()) {
+//                    playerState.currentPattern.isHighJump = true;
+//                }
+//            }
+//            else if (lastTimingResult == TimingResult::Good) {
+//                playerCharacter.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);  // Temporarily green
+//            }
+//        }
+//    }
+//
+//    lastInputState = isLPressed;
+//}
+void SeesawScene::handlePlayerInput() {
+    auto& input = Input::get();
+    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+    float jumpDuration = getJumpDuration(playerState.currentPattern.startPos);
+    float phase = (currentTime - sequenceStartTime) / jumpDuration;
+
+    //// Handle missed inputs - check if we're past the timing window without input
+    //if (currentState == GameState::PlayerJumping &&
+    //    !hasInputThisBeat && phase > (1.0f - BAD_WINDOW)) {
+    //    // Force a "Miss" result
+    //    lastTimingResult = TimingResult::Miss;
+    //    lastFeedbackTime = currentTime;
+    //    hasInputThisBeat = true;
+    //    badTimingAnimationTime = BAD_ANIMATION_DURATION;
+    //    feedbackCube.color = getTimingResultColor(TimingResult::Miss);
+    //    playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    //}
+    // Only check for missed inputs during player's turn and after descent begins
+    if (currentState == GameState::PlayerJumping &&
+        !hasInputThisBeat && phase >= 0.85f) { // Starting descent
+        // Check for miss only after passing the good timing window
+        if (phase > 1.0f + GOOD_WINDOW) {
+            lastTimingResult = TimingResult::Miss;
+            lastFeedbackTime = currentTime;
+            hasInputThisBeat = true;
+            badTimingAnimationTime = BAD_ANIMATION_DURATION;
+            feedbackCube.color = getTimingResultColor(TimingResult::Miss);
+            playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        }
+    }
+
+    if (isLPressed && !lastInputState && !hasInputThisBeat) {
+        // Allow input during end of PlayerJumping and start of NPCJumping
+        if (currentState == GameState::PlayerJumping ||
+            (currentState == GameState::NPCJumping && phase < 0.2f)) {
+
+            lastTimingResult = checkTiming(phase);
+            lastFeedbackTime = currentTime;
+            hasInputThisBeat = true;
+
+            // Update feedback cube color
+            feedbackCube.color = getTimingResultColor(lastTimingResult);
+
+            // Visual feedback based on timing
+            if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
+                badTimingAnimationTime = BAD_ANIMATION_DURATION;
+            }
+            else if (lastTimingResult == TimingResult::Perfect) {
+                playerCharacter.color = vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Temporarily gold
+                if (!playerState.currentPattern.isHighJump && shouldTriggerHighJump()) {
+                    playerState.currentPattern.isHighJump = true;
+                }
+            }
+            else if (lastTimingResult == TimingResult::Good) {
+                playerCharacter.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);  // Temporarily green
+            }
+        }
+    }
+
+    lastInputState = isLPressed;
+}
+
+//SeesawScene::TimingResult SeesawScene::checkTiming(float phase) {
+//    float timingDiff;
+//    float jumpDuration = getJumpDuration(
+//        currentState == GameState::PlayerJumping ?
+//        playerState.currentPattern.startPos :
+//        npcState.currentPattern.startPos
+//    );
+//
+//    if (currentState == GameState::PlayerJumping) {
+//        // For player jumping, check timing relative to landing (phase 1.0)
+//        timingDiff = abs(1.0f - phase);
+//    }
+//    else if (currentState == GameState::NPCJumping) {
+//        // If we're in early part of NPC jumping, consider it relative to previous landing
+//        if (phase < 0.2f) {
+//            timingDiff = abs(0.0f - phase);  // How far we are from the start of this phase
+//        }
+//        else {
+//            return TimingResult::Miss;  // Too late if we're well into NPC jumping
+//        }
+//    }
+//    else {
+//        return TimingResult::Miss;
+//    }
+//
+//    // Adjust timing windows based on current position
+//    float positionMultiplier = (playerState.currentPattern.startPos == Position::CloseSide) ? 1.5f : 1.0f;
+//
+//    if (timingDiff <= PERFECT_WINDOW * positionMultiplier) return TimingResult::Perfect;
+//    if (timingDiff <= GOOD_WINDOW * positionMultiplier) return TimingResult::Good;
+//    if (timingDiff <= BAD_WINDOW * positionMultiplier) return TimingResult::Bad;
+//    return TimingResult::Miss;
+//}
+SeesawScene::TimingResult SeesawScene::checkTiming(float phase) {
+    float timingDiff;
+
+    // Landing occurs at phase 1.0
+    // Perfect timing should be just before landing
+    const float LANDING_START = 0.85f; // When character starts final descent
+    const float IDEAL_TIMING = 0.95f;  // Ideal timing point (just before landing)
+
+    if (currentState == GameState::PlayerJumping) {
+        // Calculate timing difference relative to ideal timing point
+        timingDiff = abs(phase - IDEAL_TIMING);
+    }
+    else if (currentState == GameState::NPCJumping) {
+        // If we're in early part of NPC jumping, consider it relative to previous landing
+        if (phase < 0.2f) {
+            timingDiff = abs(0.0f - phase);
+        }
+        else {
+            return TimingResult::Miss;
+        }
+    }
+    else {
+        return TimingResult::Miss;
+    }
+
+    // Adjust windows to favor early inputs
+    if (phase < IDEAL_TIMING) {
+        // More forgiving for early inputs
+        if (timingDiff <= PERFECT_WINDOW * 1.5f) return TimingResult::Perfect;
+        if (timingDiff <= GOOD_WINDOW * 1.5f) return TimingResult::Good;
+        if (timingDiff <= BAD_WINDOW) return TimingResult::Bad;
+    }
+    else {
+        // Stricter for late inputs
+        if (timingDiff <= PERFECT_WINDOW) return TimingResult::Perfect;
+        if (timingDiff <= GOOD_WINDOW) return TimingResult::Good;
+        if (timingDiff <= BAD_WINDOW * 0.8f) return TimingResult::Bad;
+    }
+
+    return TimingResult::Miss;
+}
+
+//void SeesawScene::updateBadTimingAnimation(float dt) {
+//    if (badTimingAnimationTime > 0) {
+//        badTimingAnimationTime -= dt;
+//
+//        if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
+//            // More obvious shake animation
+//            float shake = sin(badTimingAnimationTime * 30.0f) * 0.3f;
+//            playerCharacter.localPosition.x += shake;
+//            playerCharacter.localRotation.z = shake * 45.0f;  // Add rotation shake
+//            playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red during shake
+//        }
+//    }
+//    else if (lastTimingResult != TimingResult::Perfect && lastTimingResult != TimingResult::Good) {
+//        // Reset character appearance
+//        playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
+//        playerCharacter.localRotation.z = 0.0f;
+//    }
+//}
+void SeesawScene::updateBadTimingAnimation(float dt) {
+    //if (badTimingAnimationTime > 0) {
+    //    badTimingAnimationTime -= dt;
+
+    //    if (lastTimingResult == TimingResult::Bad || lastTimingResult == TimingResult::Miss) {
+    //        // More dramatic shake animation
+    //        float shake = sin(badTimingAnimationTime * 30.0f) * 0.5f; // Increased amplitude
+    //        float verticalShake = cos(badTimingAnimationTime * 40.0f) * 0.3f; // Added vertical shake
+
+    //        // Add offset to current position rather than directly modifying x
+    //        vec3 basePos = getPositionForCharacter(true, playerState.currentPos);
+    //        playerCharacter.localPosition = basePos + vec3(shake, verticalShake, 0.0f);
+    //        playerCharacter.localRotation.z = shake * 60.0f;  // More dramatic rotation
+    //        playerCharacter.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red during shake
+    //    }
+    //}
+    //else if (lastTimingResult != TimingResult::Perfect && lastTimingResult != TimingResult::Good) {
+    //    // Reset character appearance and ensure correct position
+    //    playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
+    //    playerCharacter.localRotation.z = 0.0f;
+    //    playerCharacter.localPosition = getPositionForCharacter(true, playerState.currentPos);
+    //}
+}
+
+//void SeesawScene::updateFeedbackCube(float dt) {
+//    float currentJumpDuration = getJumpDuration(
+//        currentState == GameState::PlayerJumping ?
+//        playerState.currentPattern.startPos :
+//        npcState.currentPattern.startPos
+//    );
+//
+//    float phase = (currentTime - sequenceStartTime) / currentJumpDuration;
+//
+//    // Base pulsing effect
+//    beatPulseScale = 1.0f + 0.2f * sin(phase * 2.0f * M_PI);
+//    feedbackCube.localScale = vec3(0.5f * beatPulseScale);
+//
+//    // Only fade the feedback if enough time has passed
+//    if (currentTime - lastFeedbackTime > FEEDBACK_DURATION) {
+//        feedbackCube.color = vec4(0.5f);  // Reset to gray
+//    }
+//}
+void SeesawScene::updateFeedbackCube(float dt) {
+    float currentJumpDuration = getJumpDuration(
+        currentState == GameState::PlayerJumping ?
+        playerState.currentPattern.startPos :
+        npcState.currentPattern.startPos
+    );
+
+    float phase = (currentTime - sequenceStartTime) / currentJumpDuration;
+
+    // Keep feedback cube in fixed position above seesaw center
+    feedbackCube.localPosition = seesawPivotPoint + vec3(0.0f, 2.5f, 0.0f);
+
+    // Base pulsing effect
+    beatPulseScale = 1.0f + 0.2f * sin(phase * 2.0f * M_PI);
+    feedbackCube.localScale = vec3(0.5f * beatPulseScale);
+
+    if (currentTime - lastFeedbackTime > FEEDBACK_DURATION) {
+        feedbackCube.color = vec4(0.5f);  // Reset to gray
+    }
+}
+
+void SeesawScene::render(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    // Render seesaw
+    jr.beginBatchRender(seesaw.shapeType, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(seesaw, isShadow);
+    jr.endBatchRender(isShadow);
+
+    // Render characters and indicators
+    jr.beginBatchRender(playerCharacter.shapeType, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(playerCharacter, isShadow);
+    jr.renderBatchWithOwnColor(npcCharacter, isShadow);
+    jr.renderBatchWithOwnColor(feedbackCube, isShadow);
+    jr.renderBatchWithOwnColor(playerIndicator, isShadow);
+    jr.endBatchRender(isShadow);
+}
+
+void SeesawScene::renderUI() {
+    if (ImGui::CollapsingHeader("Seesaw Settings")) {
+        ImGui::SliderFloat("Base Jump Height", &baseJumpHeight, 1.0f, 8.0f);
+        ImGui::SliderFloat("Seesaw Tilt", &seesawTiltAngle, 5.0f, 30.0f);
+        ImGui::SliderFloat("Character Offset", &characterOffset, 0.0f, 2.0f);
+        //ImGui::SliderFloat("Base Height", &CHARACTER_BASE_HEIGHT, 0.0f, 1.0f);
+
+        ImGui::Separator();
+
+        // Pattern info
+        ImGui::Text("Player Pattern: %s to %s",
+            playerState.currentPattern.startPos == Position::FarSide ? "Far" : "Close",
+            playerState.currentPattern.endPos == Position::FarSide ? "Far" : "Close");
+        ImGui::Text("NPC Pattern: %s to %s",
+            npcState.currentPattern.startPos == Position::FarSide ? "Far" : "Close",
+            npcState.currentPattern.endPos == Position::FarSide ? "Far" : "Close");
+
+        // Current state and timing info
+        const char* stateStr = "Unknown";
+        switch (currentState) {
+        case GameState::StartSequence: stateStr = "Start Sequence"; break;
+        case GameState::PlayerJumping: stateStr = "Player Jumping"; break;
+        case GameState::NPCJumping: stateStr = "NPC Jumping"; break;
+        }
+        ImGui::Text("Current State: %s", stateStr);
+
+        float currentJumpDuration = getJumpDuration(
+            currentState == GameState::PlayerJumping ?
+            playerState.currentPattern.startPos :
+            npcState.currentPattern.startPos
+        );
+        ImGui::Text("Beat Progress: %.2f", (currentTime - sequenceStartTime) / currentJumpDuration);
+
+        const char* timingStr = "None";
+        switch (lastTimingResult) {
+        case TimingResult::Perfect: timingStr = "PERFECT!"; break;
+        case TimingResult::Good: timingStr = "Good!"; break;
+        case TimingResult::Bad: timingStr = "Bad"; break;
+        case TimingResult::Miss: timingStr = "Miss"; break;
+        case TimingResult::None: timingStr = "None"; break;
+        }
+        ImGui::Text("Last Timing: %s", timingStr);
+    }
+}
+
+//vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos) {
+//    // Modified jump curve to spend more time at peak
+//    float modifiedT;
+//    if (t < 0.3f) {
+//        // Going up (30% of time)
+//        modifiedT = t / 0.3f * 0.5f;
+//    }
+//    else if (t < 0.7f) {
+//        // At peak (40% of time)
+//        modifiedT = 0.5f;
+//    }
+//    else {
+//        // Going down (30% of time)
+//        modifiedT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
+//    }
+//
+//    return glm::mix(startPos, peakPos, sin(modifiedT * M_PI));
+//}
+//vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
+//    // Modified jump curve to spend more time at peak and include horizontal movement
+//    float verticalT;
+//    if (t < 0.3f) {
+//        // Going up (30% of time)
+//        verticalT = t / 0.3f * 0.5f;
+//    }
+//    else if (t < 0.7f) {
+//        // At peak (40% of time)
+//        verticalT = 0.5f;
+//    }
+//    else {
+//        // Going down (30% of time)
+//        verticalT = 0.5f + (t - 0.7f) / 0.3f * 0.5f;
+//    }
+//
+//    // Calculate vertical position using sine curve
+//    float height = sin(verticalT * M_PI);
+//
+//    // Smoothly interpolate horizontal position
+//    vec3 horizontalPos = glm::mix(startPos, endPos, t);
+//
+//    // Combine vertical and horizontal movement
+//    return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
+//}
+vec3 SeesawScene::calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos) {
+    float verticalT;
+    if (t < 0.3f) {
+        // Going up (30% of time)
+        verticalT = t / 0.3f * 0.5f;
+    }
+    else if (t < 0.7f) {
+        // At peak (40% of time)
+        verticalT = 0.5f;
+    }
+    else {
+        // Going down (30% of time)
+        float descendT = (t - 0.7f) / 0.3f;
+        verticalT = 0.5f + descendT * 0.5f;
+
+        // Smooth landing without extra drop
+        if (descendT > 0.8f) {
+            float landingT = (descendT - 0.8f) / 0.2f;
+            // Use smoothstep for landing
+            landingT = landingT * landingT * (3.0f - 2.0f * landingT);
+            verticalT = glm::mix(verticalT, 1.0f, landingT);
+        }
+    }
+
+    // Calculate vertical position using sine curve
+    float height = sin(verticalT * M_PI);
+
+    // Smoothly interpolate horizontal position
+    vec3 horizontalPos = glm::mix(startPos, endPos, t);
+
+    // Ensure perfect landing at t = 1.0
+    if (t >= 0.99f) {
+        return endPos;
+    }
+
+    return horizontalPos + vec3(0.0f, height * (peakPos.y - startPos.y), 0.0f);
+}
+
+
+//void SeesawScene::initializePositions() {
+//    seesawPivotPoint = vec3(0.0f);
+//    currentTiltAngle = -seesawTiltAngle;
+//
+//    seesaw.localPosition = seesawPivotPoint;
+//    seesaw.localRotation = vec3(0.0f, 0.0f, currentTiltAngle);
+//
+//    // Set initial positions
+//    playerCharacter.localPosition = getPositionForCharacter(true, Position::FarSide);
+//    npcCharacter.localPosition = vec3(-seesawLength * 0.5f - 2.0f, 2.0f, 0.0f);
+//
+//    // Position player indicator below right side
+//    playerIndicator.localPosition = getPositionForCharacter(true, Position::FarSide) +
+//        vec3(0.0f, -1.0f, 0.0f);
+//}
+void SeesawScene::initializePositions() {
+    seesawPivotPoint = vec3(0.0f);
+    currentTiltAngle = -seesawTiltAngle;
+
+    // Initialize seesaw with new length
+    seesaw.localPosition = seesawPivotPoint;
+    seesaw.localRotation = vec3(0.0f, 0.0f, currentTiltAngle);
+    seesaw.localScale = vec3(SEESAW_LENGTH, 0.2f, 1.0f);
+
+    // Set initial positions with new offsets
+    playerCharacter.localPosition = getPositionForCharacter(true, Position::FarSide);
+    npcCharacter.localPosition = vec3(-SEESAW_LENGTH * 0.5f - 2.0f, 2.0f, 0.0f);
+
+    // Position player indicator
+    playerIndicator.localPosition = getPositionForCharacter(true, Position::FarSide) +
+        vec3(0.0f, -1.0f, 0.0f);
+}
+
+//void SeesawScene::updateCharacterPositions(float dt) {
+//    float phase = (currentTime - sequenceStartTime) / getJumpDuration(
+//        currentState == GameState::PlayerJumping ?
+//        playerState.currentPattern.startPos :
+//        npcState.currentPattern.startPos
+//    );
+//
+//    AnimationObject* jumpingChar = (currentState == GameState::PlayerJumping) ?
+//        &playerCharacter : &npcCharacter;
+//    CharacterState& activeState = (currentState == GameState::PlayerJumping) ?
+//        playerState : npcState;
+//    bool isPlayer = (jumpingChar == &playerCharacter);
+//
+//    vec3 startPos = getPositionForCharacter(isPlayer, activeState.currentPattern.startPos);
+//    float actualJumpHeight = activeState.currentPattern.isHighJump ?
+//        jumpHeight * HIGH_JUMP_MULTIPLIER : jumpHeight;
+//    vec3 peakPos = startPos + vec3(0.0f, actualJumpHeight, 0.0f);
+//    jumpingChar->localPosition = calculateJumpPosition(phase, startPos, peakPos);
+//
+//    // Update grounded character position
+//    AnimationObject* groundedChar = (currentState == GameState::PlayerJumping) ?
+//        &npcCharacter : &playerCharacter;
+//    CharacterState& groundedState = (currentState == GameState::PlayerJumping) ?
+//        npcState : playerState;
+//    groundedChar->localPosition = getPositionForCharacter(
+//        groundedChar == &playerCharacter,
+//        groundedState.currentPos
+//    );
+//}
+void SeesawScene::updateCharacterPositions(float dt) {
+    float phase = (currentTime - sequenceStartTime) / getJumpDuration(
+        currentState == GameState::PlayerJumping ?
+        playerState.currentPattern.startPos :
+        npcState.currentPattern.startPos
+    );
+
+    AnimationObject* jumpingChar = (currentState == GameState::PlayerJumping) ?
+        &playerCharacter : &npcCharacter;
+    CharacterState& activeState = (currentState == GameState::PlayerJumping) ?
+        playerState : npcState;
+    bool isPlayer = (jumpingChar == &playerCharacter);
+
+    vec3 startPos = getPositionForCharacter(isPlayer, activeState.currentPattern.startPos);
+    vec3 endPos = getPositionForCharacter(isPlayer, activeState.currentPattern.endPos);
+    float actualJumpHeight = activeState.currentPattern.isHighJump ?
+        jumpHeight * HIGH_JUMP_MULTIPLIER : jumpHeight;
+
+    vec3 peakPos = (startPos + endPos) * 0.5f + vec3(0.0f, actualJumpHeight, 0.0f);
+    jumpingChar->localPosition = calculateJumpPosition(phase, startPos, endPos, peakPos);
+
+    // Update grounded character position
+    AnimationObject* groundedChar = (currentState == GameState::PlayerJumping) ?
+        &npcCharacter : &playerCharacter;
+    CharacterState& groundedState = (currentState == GameState::PlayerJumping) ?
+        npcState : playerState;
+    groundedChar->localPosition = getPositionForCharacter(
+        groundedChar == &playerCharacter,
+        groundedState.currentPos
+    );
+}
+
+vec3 SeesawScene::calculateSeesawEndPoint(float side, float tiltAngle) {
+    float adjustedLength = (seesawLength * 0.5f) - characterOffset;
+    return seesawPivotPoint +
+        vec3(cos(glm::radians(tiltAngle)) * adjustedLength * side,
+            sin(glm::radians(tiltAngle)) * adjustedLength * side + characterBaseHeight,
+            0.0f);
+}
+
+ptr_vector<AnimationObject> SeesawScene::getObjects() {
+    return { &seesaw, &playerCharacter, &npcCharacter, &feedbackCube, &playerIndicator };
+}
+
+vec4 SeesawScene::getTimingResultColor(TimingResult result) {
+    switch (result) {
+    case TimingResult::Perfect: return vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Gold
+    case TimingResult::Good: return vec4(0.0f, 1.0f, 0.0f, 1.0f);      // Green
+    case TimingResult::Bad: return vec4(1.0f, 0.0f, 0.0f, 1.0f);       // Red
+    default: return vec4(0.5f, 0.5f, 0.5f, 1.0f);                      // Gray
+    }
+}
+
+
+
+--- Scenes\SeesawScene.h ---
+#pragma once
+#include "Scene.h"
+#include "AnimationObject.h"
+#include "AudioSystem.h"
+
+class SeesawScene : public Scene {
+public:
+    SeesawScene();
+    ~SeesawScene() override;
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    // Position types
+    enum class Position {
+        FarSide,
+        CloseSide
+    };
+
+    // Pattern definition
+    struct JumpPattern {
+        Position startPos;
+        Position endPos;
+        bool isHighJump;
+    };
+
+    // Character state tracking
+    struct CharacterState {
+        Position currentPos;
+        JumpPattern currentPattern;
+        bool isJumping;
+        float jumpStartTime;
+        bool isHighJump;
+    };
+
+    // Visual objects (existing)
+    AnimationObject seesaw;
+    AnimationObject playerCharacter;
+    AnimationObject npcCharacter;
+    AnimationObject feedbackCube;
+    AnimationObject playerIndicator;
+
+    // Timing enums (existing)
+    enum class TimingResult {
+        None,
+        Perfect,
+        Good,
+        Bad,
+        Miss
+    };
+
+    // Game states (modified)
+    enum class GameState {
+        StartSequence,
+        PlayerJumping,
+        NPCJumping
+    };
+
+    // Timing/Animation variables (existing + new)
+    const float BASE_BPM = 60.0f;
+    const float CLOSE_POSITION_BPM_MULTIPLIER = 2.0f;
+    const float BASE_BEAT_DURATION = 60.0f / BASE_BPM;
+    const float HIGH_JUMP_PROBABILITY = 0.1f; // 10% chance for high jump
+    const float HIGH_JUMP_MULTIPLIER = 2.0f;
+
+    float currentTime;
+    float sequenceStartTime;
+    float jumpHeight = 5.0f;
+    float baseJumpHeight = 5.0f;
+    float characterOffset = 0.8f;
+    float closePositionOffset = 0.4f; // Offset for close position
+    float characterBaseHeight = 0.4f;
+
+    // Pattern tracking
+    CharacterState playerState;
+    CharacterState npcState;
+    GameState currentState;
+
+    // Position constants
+    //const float FAR_POSITION_OFFSET = 0.8f;
+    //const float CLOSE_POSITION_OFFSET = 0.4f;
+
+    // Existing timing variables
+    bool lastInputState = false;
+    TimingResult lastTimingResult = TimingResult::None;
+    float badTimingAnimationTime = 0.0f;
+    const float BAD_ANIMATION_DURATION = 0.5f;
+
+    // Seesaw properties
+    vec3 seesawPivotPoint;
+    float seesawLength = 6.0f;
+    float seesawTiltAngle = 15.0f;
+    float currentTiltAngle = 0.0f;
+    float tiltSpeed = 360.0f;
+    float beatPulseScale = 1.0f;
+
+    // Input tracking
+    bool hasInputThisBeat = false;
+    float lastFeedbackTime = 0.0f;
+    const float FEEDBACK_DURATION = 1.0f;
+
+    // Timing windows
+    const float PERFECT_WINDOW = 0.01f;
+    const float GOOD_WINDOW = 0.03f;
+    const float BAD_WINDOW = 0.35f;
+
+    // Position constants
+    const float SEESAW_LENGTH = 12.0f;  // Doubled from original
+    const float FAR_POSITION_OFFSET = SEESAW_LENGTH * 0.4f;  // Far from center
+    const float CLOSE_POSITION_OFFSET = SEESAW_LENGTH * 0.15f; // Much closer to center
+    const float CHARACTER_BASE_HEIGHT = 0.4f;
+
+    // New helper functions for pattern system
+    void selectNewPattern(CharacterState& state);
+    float getCurrentBPM(Position startPos) const;
+    float getJumpDuration(Position startPos) const;
+    vec3 getPositionForCharacter(bool isPlayer, Position pos) const;
+    bool shouldTriggerHighJump() const;
+    void updateCharacterJump(CharacterState& state, AnimationObject& character, float dt);
+
+    // Existing helper functions
+    void updateSeesawTilt(float dt);
+    void updateCharacterPositions(float dt);
+    //vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos);
+    vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos);
+
+    void initializePositions();
+    vec3 calculateSeesawEndPoint(float side, float tiltAngle);
+    void handlePlayerInput();
+    TimingResult checkTiming(float currentPhase);
+    void updateFeedbackCube(float dt);
+    void updateBadTimingAnimation(float dt);
+    vec4 getTimingResultColor(TimingResult result);
+
+    // Audio system reference
+    AudioSystem& audio;
+};
 
 --- Scenes\SingleCubeScene.cpp ---
 #include "SingleCubeScene.h"
@@ -350,5 +2697,759 @@ public:
 
 private:
     AnimationObject centerSphere;
+};
+
+
+--- Scenes\TambourineScene.cpp ---
+#include "TambourineScene.h"
+#include "AnimationObjectRenderer.h"
+#include "imgui.h"
+#include "Input.h"
+#include <iostream>
+
+
+// Implementation
+TambourineScene::TambourineScene()
+    : currentState(GameState::MonkeyTurn)
+    , currentNoteIndex(0)
+    , sequenceStartTime(0)
+    , currentTime(0)
+    , introStartTime(0)  // Initialize new variable
+    , lastShakeState(false)
+    , lastClapState(false)
+    , showFeedbackCube(true)
+    , audio(AudioSystem::get()) {
+    monkeyAnim = { false, false, 0.0f };
+    playerAnim = { false, false, 0.0f };
+}
+
+void TambourineScene::init() {
+    // Initialize all visual objects immediately
+    monkey = AnimationObject(AnimationObjectType::box);
+    monkey.localPosition = vec3(-2.0f, 0.0f, 0.0f);
+    monkey.localScale = vec3(1.0f);
+    monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
+    monkey.updateMatrix(true);  // Important: Update matrices immediately
+
+    monkeyTambourine = AnimationObject(AnimationObjectType::box);
+    monkeyTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
+    monkeyTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
+    monkeyTambourine.updateMatrix(true);
+
+    // Add new model tambourine
+    monkeyTambourineModel = AnimationObject(AnimationObjectType::model);
+    monkeyTambourineModel.meshName = "../assets/models/tambourine.obj";
+    monkeyTambourineModel.localScale = vec3(1.0f);
+    monkeyTambourineModel.color = vec4(1.0f);
+    monkeyTambourineModel.updateMatrix(true);
+
+
+    player = AnimationObject(AnimationObjectType::box);
+    player.localPosition = vec3(2.0f, 0.0f, 0.0f);
+    player.localScale = vec3(1.0f);
+    player.color = vec4(1.0f);
+    player.updateMatrix(true);
+
+    playerTambourine = AnimationObject(AnimationObjectType::box);
+    playerTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
+    playerTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
+    playerTambourine.updateMatrix(true);
+
+
+    // Add new model tambourine
+    playerTambourineModel = AnimationObject(AnimationObjectType::model);
+    playerTambourineModel.meshName = "../assets/models/tambourine.obj";
+    playerTambourineModel.localScale = vec3(1.0f);
+    playerTambourineModel.color = vec4(1.0f);
+    playerTambourineModel.updateMatrix(true);
+
+
+
+    playerIndicator = AnimationObject(AnimationObjectType::box);
+    playerIndicator.localScale = vec3(0.3f);
+    playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    playerIndicator.updateMatrix(true);
+
+    feedbackCube = AnimationObject(AnimationObjectType::box);
+    feedbackCube.localPosition = vec3(0.0f, 2.0f, 0.0f);
+    feedbackCube.localScale = vec3(0.5f);
+    feedbackCube.color = vec4(0.5f);
+    feedbackCube.updateMatrix(true);
+
+    timingIndicator = AnimationObject(AnimationObjectType::box);
+    timingIndicator.localPosition = vec3(0.0f, -1.0f, 0.0f);
+    timingIndicator.localScale = vec3(4.0f, 0.1f, 0.1f);
+    timingIndicator.color = vec4(0.3f, 0.3f, 0.3f, 1.0f);
+    timingIndicator.updateMatrix(true);
+
+    // Initialize game state
+    beatPulseScale = 1.0f;
+    lastBeatTime = 0.0f;
+    currentBeatCount = 0;
+    comboCount = 0;
+    lastInputTime = 0.0f;
+
+    initializeSequences();
+    audio.loadScene("tambourine");
+
+    // Set the intro start time
+    introStartTime = currentTime;
+    currentState = GameState::Intro;
+}
+
+void TambourineScene::initializeSequences() {
+    // Initialize some example rhythm sequences (4/4 time)
+    availableSequences = {
+        // Simple sequence: 4 quarter notes (all shakes)
+        {{{RhythmNote::Type::Shake, 0.0f},
+          {RhythmNote::Type::Shake, 1.0f},
+          {RhythmNote::Type::Shake, 2.0f},
+          {RhythmNote::Type::Shake, 3.0f}}},
+
+          // Mix of shakes and claps
+          {{{RhythmNote::Type::Shake, 0.0f},
+            {RhythmNote::Type::Clap, 1.0f},
+            {RhythmNote::Type::Shake, 2.0f},
+            {RhythmNote::Type::Clap, 3.0f}}},
+
+            // More complex pattern with eighth notes
+            {{{RhythmNote::Type::Shake, 0.0f},
+              {RhythmNote::Type::Shake, 0.5f},
+              {RhythmNote::Type::Clap, 1.0f},
+              {RhythmNote::Type::Shake, 2.0f},
+              {RhythmNote::Type::Shake, 2.5f},
+              {RhythmNote::Type::Clap, 3.0f}}}
+    };
+}
+
+void TambourineScene::update(double now, float dt) {
+    currentTime += dt;
+
+    // Handle intro state exit
+    if (currentState == GameState::Intro) {
+        // Check if intro duration has elapsed
+        if (currentTime - introStartTime >= INTRO_DURATION) {
+            currentState = GameState::MonkeyTurn;
+            sequenceStartTime = currentTime;
+            startNewSequence();
+        }
+        return;
+    }
+
+    // Update animations and beat visuals
+    updateAnimations(dt);
+    updateBeatVisuals(dt);
+
+    // Update game state
+    switch (currentState) {
+    case GameState::MonkeyTurn:
+        updateMonkeyTurn(dt);
+        break;
+
+    case GameState::PlayerTurn:
+        updatePlayerTurn(dt);
+        break;
+
+    case GameState::Evaluation:
+        evaluatePlayerSequence(dt);
+        break;
+    }
+
+    // Update matrices
+    monkey.updateMatrix(true);
+    monkeyTambourine.updateMatrix(true);
+    player.updateMatrix(true);
+    playerTambourine.updateMatrix(true);
+    playerIndicator.updateMatrix(true);
+    feedbackCube.updateMatrix(true);
+    timingIndicator.updateMatrix(true);  // Don't forget the new timing indicator!
+}
+
+void TambourineScene::updateBeatVisuals(float dt) {
+    float currentBeat = (currentTime - sequenceStartTime) / BEAT_DURATION;
+    float beatPhase = fmod(currentBeat, 1.0f);
+
+    // Update beat pulse
+    beatPulseScale = 1.0f + 0.2f * (1.0f - beatPhase);
+    feedbackCube.localScale = vec3(0.5f * beatPulseScale);
+
+    // Update timing indicator
+    float progress = currentBeat / 4.0f; // 4 beats per measure
+    timingIndicator.color = vec4(0.3f + progress * 0.7f, 0.3f, 0.3f, 1.0f);
+}
+
+
+void TambourineScene::updateMonkeyTurn(float dt) {
+    float sequenceTime = currentTime - sequenceStartTime;
+    float currentBeat = sequenceTime / BEAT_DURATION;
+
+    if (currentNoteIndex < currentSequence.notes.size()) {
+        const auto& note = currentSequence.notes[currentNoteIndex];
+
+        if (currentBeat >= note.timing) {
+            // Alternate between normal and alt sounds for shakes
+            bool useAlt = (rand() % 2) == 0;
+
+            // Play appropriate sound and animation
+            switch (note.type) {
+            case RhythmNote::Type::Shake:
+                audio.playSound(useAlt ? "tamb_monkey_a_2" : "tamb_monkey_a");
+                monkeyAnim.isShaking = true;
+                break;
+            case RhythmNote::Type::Clap:
+                audio.playSound("tamb_monkey_ab");
+                monkeyAnim.isClapping = true;
+                break;
+            }
+            currentNoteIndex++;
+        }
+    }
+    else if (sequenceTime >= (4.0f * BEAT_DURATION)) {
+        // Play the transition sound
+        audio.playSound("tamb_monkey_squeal");
+
+        // Update sequence timing to account for transition
+        sequenceStartTime = currentTime + TRANSITION_DURATION;
+        currentState = GameState::PlayerTurn;
+        currentNoteIndex = 0;
+        playerSequence.clear();
+    }
+}
+
+void TambourineScene::updatePlayerTurn(float dt) {
+    auto& input = Input::get();
+    bool isShakePressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+    bool isClapPressed = input.current.keyStates[GLFW_KEY_K] == GLFW_PRESS;
+
+    float sequenceTime = currentTime - sequenceStartTime;
+    float currentBeat = sequenceTime / BEAT_DURATION;
+
+    // Handle inputs
+    if ((isShakePressed && !lastShakeState) || (isClapPressed && !lastClapState)) {
+        float inputBeat = currentBeat;
+        lastInputTime = currentTime;
+
+        // Find closest expected beat
+        float closestBeat = -1;
+        float minDiff = TIMING_TOLERANCE;
+        for (const auto& note : currentSequence.notes) {
+            float diff = std::abs(inputBeat - note.timing);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestBeat = note.timing;
+            }
+        }
+
+        // Store timing difference for feedback
+        playerTimings.push_back(inputBeat - closestBeat);
+
+        RhythmNote::Type inputType = isShakePressed ? RhythmNote::Type::Shake : RhythmNote::Type::Clap;
+        playerSequence.push_back({ inputType, inputBeat });
+
+        if (isShakePressed) {
+            useAlternateSound = !useAlternateSound;
+            audio.playSound(useAlternateSound ? "tamb_player_a_2" : "tamb_player_a");
+            playerAnim.isShaking = true;
+        }
+        else {
+            audio.playSound("tamb_player_ab");
+            playerAnim.isClapping = true;
+        }
+    }
+
+    lastShakeState = isShakePressed;
+    lastClapState = isClapPressed;
+
+    if (currentTime - sequenceStartTime >= (4.0f * BEAT_DURATION)) {
+        currentState = GameState::Evaluation;
+    }
+}
+
+void TambourineScene::evaluatePlayerSequence(float dt) {
+    static float evaluationTime = 0;  // Keep track of how long we've been evaluating
+
+    // Only evaluate on first entry into this state
+    if (evaluationTime == 0) {
+        bool success = true;
+        // Simple evaluation - check if we have the same number of notes
+        if (playerSequence.size() == currentSequence.notes.size()) {
+            // Check timing of each note (with some tolerance)
+            for (size_t i = 0; i < playerSequence.size(); i++) {
+                if (std::abs(playerSequence[i].timing - currentSequence.notes[i].timing) > TIMING_TOLERANCE) {
+                    success = false;
+                    break;
+                }
+            }
+        }
+        else {
+            success = false;
+        }
+
+        if (success) {
+            audio.playSound("tamb_monkey_happy");
+            feedbackCube.color = vec4(0.0f, 1.0f, 0.0f, 1.0f); // Green
+        }
+        else {
+            audio.playSound("tamb_monkey_squeal");
+            feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f); // Red
+        }
+    }
+
+    evaluationTime += dt;  // Add time passed
+
+    // Only move to next sequence after one beat
+    if (evaluationTime >= BEAT_DURATION) {
+        evaluationTime = 0;  // Reset for next evaluation
+        startNewSequence();
+    }
+}
+
+void TambourineScene::startNewSequence() {
+    // Randomly select a new sequence
+    currentSequence = availableSequences[rand() % availableSequences.size()];
+    currentNoteIndex = 0;
+    sequenceStartTime = currentTime;
+    currentState = GameState::MonkeyTurn;
+}
+
+void TambourineScene::updateAnimations(float dt) {
+    const float ANIM_DURATION = 0.2f;
+
+    // Update monkey animations
+    if (monkeyAnim.isShaking || monkeyAnim.isClapping) {
+        monkeyAnim.animationTime += dt;
+        if (monkeyAnim.animationTime >= ANIM_DURATION) {
+            monkeyAnim.isShaking = false;
+            monkeyAnim.isClapping = false;
+            monkeyAnim.animationTime = 0.0f;
+        }
+
+        float t = monkeyAnim.animationTime / ANIM_DURATION;
+        if (monkeyAnim.isShaking) {
+            vec3 newPos = vec3(-0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            monkeyTambourine.localPosition = newPos;
+            monkeyTambourineModel.localPosition = newPos;
+            monkeyTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
+        }
+        else if (monkeyAnim.isClapping) {
+            vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            monkeyTambourine.localPosition = newPos;
+            monkeyTambourineModel.localPosition = newPos;
+        }
+    }
+    else {
+        vec3 defaultPos = vec3(-0.8f, 0.0f, 0.0f);
+        monkeyTambourine.localPosition = defaultPos;
+        monkeyTambourineModel.localPosition = defaultPos;
+        monkeyTambourineModel.localRotation = vec3(0.0f);
+    }
+
+    // Update player animations
+    if (playerAnim.isShaking || playerAnim.isClapping) {
+        playerAnim.animationTime += dt;
+        if (playerAnim.animationTime >= ANIM_DURATION) {
+            playerAnim.isShaking = false;
+            playerAnim.isClapping = false;
+            playerAnim.animationTime = 0.0f;
+        }
+
+        float t = playerAnim.animationTime / ANIM_DURATION;
+        if (playerAnim.isShaking) {
+            vec3 newPos = vec3(0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
+            playerTambourine.localPosition = newPos;
+            playerTambourineModel.localPosition = newPos;
+            playerTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
+        }
+        else if (playerAnim.isClapping) {
+            vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
+            playerTambourine.localPosition = newPos;
+            playerTambourineModel.localPosition = newPos;
+        }
+    }
+    else {
+        vec3 defaultPos = vec3(0.8f, 0.0f, 0.0f);
+        playerTambourine.localPosition = defaultPos;
+        playerTambourineModel.localPosition = defaultPos;
+        playerTambourineModel.localRotation = vec3(0.0f);
+    }
+
+    // Update player indicator position
+    playerIndicator.localPosition = vec3(player.localPosition.x,
+        player.localPosition.y + 1.5f,
+        player.localPosition.z);
+
+    // Don't forget to update matrices
+    monkeyTambourineModel.updateMatrix(true);
+    playerTambourineModel.updateMatrix(true);
+}
+
+void TambourineScene::render(const mat4& projection, const mat4& view, bool isShadow) {
+    renderMonkey(projection, view, isShadow);
+    renderPlayer(projection, view, isShadow);
+
+    // Render feedback cube if enabled
+    if (showFeedbackCube) {
+        auto& jr = AnimationObjectRenderer::get();
+        jr.beginBatchRender(feedbackCube.shapeType, false, vec4(1.f), isShadow);
+        jr.renderBatchWithOwnColor(feedbackCube, isShadow);
+        jr.endBatchRender(isShadow);
+    }
+}
+
+void TambourineScene::renderUI() {
+    if (ImGui::CollapsingHeader("Tambourine Game Status")) {
+        // Game state
+        const char* stateStr = "Unknown";
+        switch (currentState) {
+            case GameState::Intro: stateStr = "Get Ready!"; break;
+            case GameState::MonkeyTurn: stateStr = "Watch the Monkey!"; break;
+            case GameState::PlayerTurn: stateStr = "Your Turn!"; break;
+            case GameState::Evaluation: stateStr = "Checking..."; break;
+        }
+        ImGui::Text("Current State: %s", stateStr);
+
+        // Timing info
+        float sequenceTime = currentTime - sequenceStartTime;
+        float currentBeat = sequenceTime / BEAT_DURATION;
+        ImGui::Text("Beat: %.2f / 4.00", currentBeat);
+        ImGui::Text("Combo: %d", comboCount);
+
+        // Recent timing feedback
+        if (!playerTimings.empty()) {
+            ImGui::Text("Last Hit Timing: %s", 
+                getTimingFeedback(playerTimings.back()).c_str());
+        }
+
+        // Controls reminder
+        ImGui::Separator();
+        ImGui::Text("Controls:");
+        ImGui::Text("L - Shake");
+        ImGui::Text("K - Clap");
+        
+        // Visual settings
+        ImGui::Separator();
+        ImGui::Checkbox("Show Beat Indicator", &showFeedbackCube);
+    }
+}
+
+ptr_vector<AnimationObject> TambourineScene::getObjects() {
+    return { &monkey, &monkeyTambourine, &monkeyTambourineModel,
+             &player, &playerTambourine, &playerTambourineModel,
+             &playerIndicator, &feedbackCube, &timingIndicator };
+}
+
+TambourineScene::~TambourineScene() {
+    // Cleanup if needed
+}
+
+void TambourineScene::renderMonkey(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    // Render monkey
+    jr.beginBatchRender(monkey.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (monkey.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(monkey, isShadow);
+    jr.endBatchRender(isShadow);
+
+    // Render monkey's tambourine
+    jr.beginBatchRender(monkeyTambourine.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (monkeyTambourine.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(monkeyTambourine, isShadow);
+    jr.endBatchRender(isShadow);
+
+
+    // Render model monkey's tambourine
+    jr.beginBatchRender(monkeyTambourineModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(monkeyTambourineModel, isShadow);
+    jr.endBatchRender(isShadow);
+}
+
+void TambourineScene::renderPlayer(const mat4& projection, const mat4& view, bool isShadow) {
+    auto& jr = AnimationObjectRenderer::get();
+
+    // Render player
+    jr.beginBatchRender(player.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (player.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(player, isShadow);
+    jr.endBatchRender(isShadow);
+
+    // Render player's tambourine
+    jr.beginBatchRender(playerTambourine.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (playerTambourine.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(playerTambourine, isShadow);
+    jr.endBatchRender(isShadow);
+
+    // Render player indicator
+    jr.beginBatchRender(playerIndicator.shapeType, false, vec4(1.f), isShadow);
+    if (!isShadow) {
+        if (playerIndicator.cullFace) {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else {
+            glDisable(GL_CULL_FACE);
+        }
+    }
+    if (isShadow) {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
+    jr.renderBatchWithOwnColor(playerIndicator, isShadow);
+    jr.endBatchRender(isShadow);
+
+
+    // Render model player's tambourine
+    jr.beginBatchRender(playerTambourineModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(playerTambourineModel, isShadow);
+    jr.endBatchRender(isShadow);
+
+}
+
+std::string TambourineScene::getTimingFeedback(float difference) {
+    difference = std::abs(difference);
+    if (difference < 0.1f) return "PERFECT!";
+    if (difference < 0.2f) return "Great!";
+    if (difference < TIMING_TOLERANCE) return "Good";
+    return "Miss";
+}
+
+--- Scenes\TambourineScene.h ---
+#pragma once
+#include "Scene.h"
+#include "AnimationObject.h"
+#include "AudioSystem.h"
+
+struct RhythmNote {
+    enum class Type { Shake, Clap };
+    Type type;
+    float timing; // In beats (0.0 - 4.0 for a 4/4 measure)
+};
+
+struct RhythmSequence {
+    std::vector<RhythmNote> notes;
+};
+
+class TambourineScene : public Scene {
+public:
+    TambourineScene();
+    ~TambourineScene() override;
+    void init() override;
+    void update(double now, float dt) override;
+    void render(const mat4& projection, const mat4& view, bool isShadow) override;
+    void renderUI() override;
+    ptr_vector<AnimationObject> getObjects() override;
+
+private:
+    // Visual objects
+    AnimationObject monkey;
+    AnimationObject monkeyTambourine;
+    AnimationObject player;
+    AnimationObject playerTambourine;
+    AnimationObject playerIndicator;
+    AnimationObject feedbackCube;
+    AnimationObject timingIndicator; // New: shows current beat position
+
+
+    AnimationObject monkeyTambourineModel;
+    AnimationObject playerTambourineModel;
+
+    // Game state
+    enum class GameState {
+        Intro,       // New: show instructions
+        MonkeyTurn,
+        PlayerTurn,
+        Evaluation
+    };
+    GameState currentState;
+
+    // Rhythm sequences
+    std::vector<RhythmSequence> availableSequences;
+    RhythmSequence currentSequence;
+    size_t currentNoteIndex;
+
+    // Timing
+    const float BPM = 120.0f;  // Slower default tempo
+    const float BEAT_DURATION = 60.0f / BPM;
+    const float TIMING_TOLERANCE = 0.4f; // More forgiving timing window
+    float sequenceStartTime;
+    float currentTime;
+
+    const float INTRO_DURATION = 2.0f;  // Duration of intro in seconds
+    const float TRANSITION_DURATION = BEAT_DURATION;  // One full beat for transition
+    float introStartTime;  // Track when intro began
+
+    // Visual feedback
+    float beatPulseScale;
+    float lastBeatTime;
+    int currentBeatCount;
+    std::vector<float> playerTimings; // Store actual timings for feedback
+
+    // Player input tracking
+    std::vector<RhythmNote> playerSequence;
+    bool lastShakeState;
+    bool lastClapState;
+    bool showFeedbackCube;
+    int comboCount;        // Track successful hits in a row
+    float lastInputTime;   // For showing timing feedback
+
+    // Animation states
+    struct AnimationState {
+        bool isShaking;
+        bool isClapping;
+        float animationTime;
+    };
+    AnimationState monkeyAnim;
+    AnimationState playerAnim;
+
+    // Audio system reference
+    AudioSystem& audio;
+
+    // Helper functions
+    void initializeSequences();
+    void startNewSequence();
+    void updateMonkeyTurn(float dt);
+    void updatePlayerTurn(float dt);
+    void evaluatePlayerSequence(float dt);
+    void updateAnimations(float dt);
+    void updateBeatVisuals(float dt);
+    void renderMonkey(const mat4& projection, const mat4& view, bool isShadow);
+    void renderPlayer(const mat4& projection, const mat4& view, bool isShadow);
+    std::string getTimingFeedback(float difference);
+    bool useAlternateSound = false;
+};
+
+--- Scenes\WaveSound.cpp ---
+#define MINIAUDIO_IMPLEMENTATION
+#define MA_API  // Define MA_API as empty for implementation
+
+#include "miniaudio.h"
+#include "WaveSound.h"
+#include <iostream>
+
+WaveSound::WaveSound(const std::string& filepath, ma_engine* engine)
+    : filepath(filepath), isLoaded(false), volume(1.0f), engine(engine), isPlaying(false) {
+}
+
+WaveSound::~WaveSound() {
+    stop();
+    if (isLoaded) {
+        ma_sound_uninit(&sound);
+    }
+}
+
+bool WaveSound::load() {
+    if (isLoaded) return true;
+
+    if (ma_sound_init_from_file(engine, filepath.c_str(), 0, NULL, NULL, &sound) != MA_SUCCESS) {
+        std::cout << "Failed to load sound: " << filepath << std::endl;
+        return false;
+    }
+
+    isLoaded = true;
+    return true;
+}
+
+void WaveSound::play() {
+    if (!isLoaded && !load()) return;
+
+    if (ma_sound_start(&sound) != MA_SUCCESS) {
+        std::cout << "Failed to start sound: " << filepath << std::endl;
+        return;
+    }
+
+    isPlaying = true;
+}
+
+void WaveSound::stop() {
+    if (isPlaying) {
+        ma_sound_stop(&sound);
+        isPlaying = false;
+    }
+}
+
+void WaveSound::setVolume(float vol) {
+    volume = vol;
+    if (isLoaded) {
+        ma_sound_set_volume(&sound, volume);
+    }
+}
+
+
+--- Scenes\WaveSound.h ---
+#pragma once
+
+#ifndef MA_API
+#define MA_API extern
+#endif
+#include "miniaudio.h"
+
+#include <string>
+
+class WaveSound {
+public:
+    WaveSound(const std::string& filepath, ma_engine* engine);
+    ~WaveSound();
+
+    bool load();
+    void play();
+    void stop();
+    void setVolume(float volume);
+
+private:
+    std::string filepath;
+    bool isLoaded;
+    float volume;
+    ma_engine* engine;  // Pointer to shared engine
+
+    ma_sound sound;     // Handle to the sound
+    bool isPlaying;
 };
 

@@ -1,16 +1,20 @@
 #include "HoleInOneScene.h"
 #include "AnimationObjectRenderer.h"
 #include "imgui.h"
+#include "Input.h"
 #include <random>
+#include <Textures.h>
 
 HoleInOneScene::HoleInOneScene()
     : currentState(GameState::Inactive)
     , currentBeat(0)
     , stateStartTime(0)
     , currentTime(0)
-    , golfClubAngle(45.0f)  // Start angled back
+    , golfClubAngle(45.0f)
     , swingInProgress(false)
-    , swingProgress(0.0f) {
+    , swingProgress(0.0f)
+    , hasInputThisTurn(false)
+    , audio(AudioSystem::get()) {
 }
 
 HoleInOneScene::~HoleInOneScene() {}
@@ -26,20 +30,92 @@ void HoleInOneScene::init() {
     golfClub.localScale = vec3(GOLF_CLUB_LENGTH, GOLF_CLUB_THICKNESS, GOLF_CLUB_THICKNESS);
     golfClub.color = vec4(0.9f);  // Light gray
 
-    // Initialize monkey
-    monkey = AnimationObject(AnimationObjectType::box);
-    monkey.localScale = vec3(0.8f);  // Slightly smaller than player
-    monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);  // Brown
+    // ==========================
+    backgroundModel = AnimationObject(AnimationObjectType::model);
+    backgroundModel.meshName = "../assets/models/holeinone/HIO_Background.obj";
 
-    // Initialize mandrill
-    mandrill = AnimationObject(AnimationObjectType::box);
-    mandrill.localScale = vec3(1.2f);  // Larger than player
-    mandrill.color = vec4(0.3f);  // Dark gray
+    // Create and register texture
+    auto backgroundTexture = std::make_shared<Texture>(
+        "../assets/models/holeinone/HIO_BackgroundTexture.png");
+    TextureRegistry::addTexture(backgroundTexture);
+    backgroundModel.texture = reinterpret_cast<void*>(backgroundTexture->id);
+
+    // Set up model properties
+    backgroundModel.localScale = vec3(1.0f);
+    backgroundModel.color = vec4(1.0f); // White to show texture properly
+    backgroundModel.localPosition = vec3(0.0f); // Center position
+    backgroundModel.updateMatrix(true);
+
+    // Initialize monkey
+    // monkey = AnimationObject(AnimationObjectType::box);
+    // monkey.localScale = vec3(0.8f);  // Slightly smaller than player
+    // monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);  // Brown
+
+    // ==================================
+        // Initialize mandrill model
+    monkeyModel = AnimationObject(AnimationObjectType::model);
+    monkeyModel.meshName = "../assets/models/holeinone/HIO_Monkey.obj";
+
+    // Create and register texture
+    auto monkeyTexture = std::make_shared<Texture>(
+        "../assets/models/holeinone/HIO_MonkeyTexture.png");
+
+
+    TextureRegistry::addTexture(monkeyTexture);
+    monkeyModel.texture = reinterpret_cast<void*>(monkeyTexture->id);
+
+    // Set up model properties
+    monkeyModel.localScale = vec3(1.0f);
+    monkeyModel.color = vec4(1.0f); // White to show texture properly
+
+
+    // ==================================
+
+    //// Initialize mandrill
+    //mandrill = AnimationObject(AnimationObjectType::box);
+    //mandrill.localScale = vec3(1.2f);  // Larger than player
+    //mandrill.color = vec4(0.3f);  // Dark gray
+
+    // ==================================
+        // Initialize mandrill model
+    mandrillModel = AnimationObject(AnimationObjectType::model);
+    mandrillModel.meshName = "../assets/models/holeinone/HIO_Mandrill.obj";
+
+    // Create and register texture
+    auto mandrillTexture = std::make_shared<Texture>(
+        "../assets/models/holeinone/HIO_MandrillTexture.jpg");
+
+
+    TextureRegistry::addTexture(mandrillTexture);
+    mandrillModel.texture = reinterpret_cast<void*>(mandrillTexture->id);
+
+    // Set up model properties
+    mandrillModel.localScale = vec3(1.0f);
+    mandrillModel.color = vec4(1.0f); // White to show texture properly
+
+
+    // ==================================
 
     // Initialize island
-    island = AnimationObject(AnimationObjectType::box);
-    island.localScale = vec3(3.0f, 0.5f, 2.0f);  // Wide platform
-    island.color = vec4(0.2f, 0.8f, 0.2f, 1.0f);  // Green
+    // island = AnimationObject(AnimationObjectType::box);
+    // island.localScale = vec3(3.0f, 0.5f, 2.0f);  // Wide platform
+    // island.color = vec4(0.2f, 0.8f, 0.2f, 1.0f);  // Green
+
+// ===============================================
+
+    // Initialize island model
+    islandModel = AnimationObject(AnimationObjectType::model);
+    islandModel.meshName = "../assets/models/holeinone/HIO_Island.obj";
+    
+    // Create and register texture
+    auto islandTexture = std::make_shared<Texture>(
+        "../assets/models/holeinone/HIO_IslandTexture.png");
+    TextureRegistry::addTexture(islandTexture);
+    islandModel.texture = reinterpret_cast<void*>(islandTexture->id);
+    
+    // Set up model properties
+    islandModel.localScale = vec3(1.0f);
+// ===============================================
 
     // Initialize golf ball
     golfBall = AnimationObject(AnimationObjectType::box);
@@ -59,28 +135,28 @@ void HoleInOneScene::init() {
 
     initializePositions();
     currentPattern = selectNextPattern();
+    audio.loadScene("holeinone");
 }
 
-//void HoleInOneScene::initializePositions() {
-//    // Set up positions (all characters facing each other along X axis)
-//    player.localPosition = vec3(0.0f, 0.0f, 0.0f);
-//    monkey.localPosition = vec3(-4.0f, 0.0f, 0.0f);
-//    mandrill.localPosition = vec3(-6.0f, 0.0f, 0.0f);
-//    island.localPosition = vec3(6.0f, 0.0f, 0.0f);  // Far to the right of player
-//
-//    // Position indicators relative to player
-//    playerIndicator.localPosition = player.localPosition + vec3(0.0f, 1.5f, 0.0f);
-//    feedbackCube.localPosition = player.localPosition + vec3(-1.0f, 1.5f, 0.0f);
-//
-//    // Initialize golf club position (angled back, with pivot point away from player)
-//    updateGolfClub(0.0f);
-//}
 void HoleInOneScene::initializePositions() {
     // Set up positions (along X axis)
     player.localPosition = vec3(0.0f, 0.0f, 0.0f);
-    monkey.localPosition = vec3(4.0f, 0.0f, 0.0f);     // Monkey to right of player
-    mandrill.localPosition = vec3(6.0f, 0.0f, 0.0f);   // Mandrill further right
-    island.localPosition = vec3(0.0f, 0.0f, -10.0f);   // Island far to player's left
+    // monkey.localPosition = vec3(4.0f, 0.0f, 0.0f);     // Monkey to right of player
+    // ========================
+    monkeyModel.localPosition = vec3(4.0f, 0.0f, 0.0f);
+    monkeyModel.updateMatrix(true);
+    // ===========================
+    // mandrill.localPosition = vec3(6.0f, 0.0f, 0.0f);   // Mandrill further right
+    // =====================
+    mandrillModel.localPosition = vec3(6.0f, 0.0f, 0.0f);
+    mandrillModel.updateMatrix(true);
+    // ====================
+
+    // island.localPosition = vec3(0.0f, 0.0f, -10.0f);   // Island far to player's left
+    // =====================
+    islandModel.localPosition = vec3(0.0f, 0.0f, -50.0f);
+    islandModel.updateMatrix(true);
+    //  ====================
 
     // Position indicators relative to player
     playerIndicator.localPosition = player.localPosition + vec3(0.0f, 1.5f, 0.0f);
@@ -90,23 +166,13 @@ void HoleInOneScene::initializePositions() {
     updateGolfClub(0.0f);
 }
 
-
-
-//vec3 HoleInOneScene::getThrowPosition(bool isMandrill) const {
-//    // Position in front of the thrower
-//    const AnimationObject& thrower = isMandrill ? mandrill : monkey;
-//    return thrower.localPosition + vec3(BALL_OFFSET, 0.0f, 0.0f);
-//}
 vec3 HoleInOneScene::getThrowPosition(bool isMandrill) const {
     // Position in front of the thrower
-    const AnimationObject& thrower = isMandrill ? mandrill : monkey;
+    const AnimationObject& thrower = isMandrill ? mandrillModel : monkeyModel;
     return thrower.localPosition + vec3(-BALL_OFFSET, 0.0f, 0.0f); // Offset towards player
 }
 
-//vec3 HoleInOneScene::getPlayerHitPosition() const {
-//    // Position where the ball should be hit (in front of player)
-//    return player.localPosition + vec3(-PLAYER_BALL_OFFSET, 0.0f, 0.0f);
-//}
+
 vec3 HoleInOneScene::getPlayerHitPosition() const {
     // Position where the ball should be hit (to right of player)
     return player.localPosition + vec3(PLAYER_BALL_OFFSET, 0.0f, 0.0f);
@@ -132,15 +198,48 @@ void HoleInOneScene::update(double now, float dt) {
         }
         break;
 
+    //case GameState::MonkeyPrep:
+    //    // During prep, ball appears in front of monkey
+    //    golfBall.localPosition = getThrowPosition(false);
+    //    golfBall.visible = true;
+
+    //    // Brighten monkey during prep
+    //    monkey.color = vec4(0.6f + PREP_COLOR_INTENSITY,
+    //        0.4f + PREP_COLOR_INTENSITY,
+    //        0.2f + PREP_COLOR_INTENSITY, 1.0f);
+
+    //    if (beatProgress >= 1.0f) {
+    //        currentState = GameState::MonkeyThrow;
+    //        stateStartTime = currentTime;
+    //        ballStartPos = golfBall.localPosition;
+    //        ballEndPos = getPlayerHitPosition();
+
+    //        // Play monkey throw sound
+    //        audio.playSound("holeinone_monkeythrow");
+
+    //        // Reset monkey color
+    //        monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
+    //    }
+    //    break;
     case GameState::MonkeyPrep:
+
+        // Play sound immediately when prep starts
+        
+        if (!soundPlayed) {
+            audio.playSound("holeinone_monkeythrow");
+            soundPlayed = true;
+        }
+
         // During prep, ball appears in front of monkey
         golfBall.localPosition = getThrowPosition(false);
         golfBall.visible = true;
 
+
+
         // Brighten monkey during prep
-        monkey.color = vec4(0.6f + PREP_COLOR_INTENSITY,
-            0.4f + PREP_COLOR_INTENSITY,
-            0.2f + PREP_COLOR_INTENSITY, 1.0f);
+        // monkey.color = vec4(0.6f + PREP_COLOR_INTENSITY,
+        //     0.4f + PREP_COLOR_INTENSITY,
+        //     0.2f + PREP_COLOR_INTENSITY, 1.0f);
 
         if (beatProgress >= 1.0f) {
             currentState = GameState::MonkeyThrow;
@@ -149,28 +248,18 @@ void HoleInOneScene::update(double now, float dt) {
             ballEndPos = getPlayerHitPosition();
 
             // Reset monkey color
-            monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
+            // monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
         }
         break;
 
     case GameState::MonkeyThrow:
-        if (beatProgress >= 1.0f) {
-            // Immediately transition to ball flight, with swing already completed
-            currentState = GameState::BallFlight;
-            stateStartTime = currentTime;
-            ballStartPos = getPlayerHitPosition();
-            ballEndPos = island.localPosition;
-            swingInProgress = true;
-            swingProgress = 0.0f;
-        }
-        break;
-
+        soundPlayed = false;
     case GameState::BallFlight:
-        if (beatProgress >= 2.0f) {  // Takes 2 beats to reach island
+        handlePlayerInput();  // Add input handling
+        if (beatProgress >= 2.0f) {
             golfBall.visible = false;
             swingInProgress = false;
 
-            // Reset for next pattern
             currentPattern = selectNextPattern();
             if (currentPattern.waitBeats == 0) {
                 startNewPattern();
@@ -179,14 +268,21 @@ void HoleInOneScene::update(double now, float dt) {
                 currentState = GameState::Inactive;
                 stateStartTime = currentTime;
             }
+            hasInputThisTurn = false;  // Reset input flag
         }
         break;
 
-        // Mandrill states
     case GameState::MandrillPrep1:
+
+        if (!soundPlayed) {  // Only play at the very start
+            audio.playSound("holeinone_mandrillthrow");
+            soundPlayed = true;
+        }
+
+
         golfBall.localPosition = getThrowPosition(true);
         golfBall.visible = true;
-        mandrill.color = vec4(0.3f + PREP_COLOR_INTENSITY);
+        //mandrill.color = vec4(0.3f + PREP_COLOR_INTENSITY);
 
         if (beatProgress >= 1.0f) {
             currentState = GameState::MandrillPrep2;
@@ -206,13 +302,18 @@ void HoleInOneScene::update(double now, float dt) {
             currentState = GameState::MandrillThrow;
             stateStartTime = currentTime;
             ballStartPos = golfBall.localPosition;
-            ballEndPos = island.localPosition;
-            mandrill.color = vec4(0.3f);  // Reset color
+            // ballEndPos = island.localPosition;
+            ballEndPos = islandModel.localPosition;
+
+            //mandrill.color = vec4(0.3f);  // Reset color
+
         }
         break;
 
     case GameState::MandrillThrow:
-        // For mandrill throw, the hit is instant with the throw
+        soundPlayed = false;
+
+        handlePlayerInput();  // Add input handling
         if (beatProgress >= 1.0f) {
             golfBall.visible = false;
             swingInProgress = false;
@@ -225,20 +326,223 @@ void HoleInOneScene::update(double now, float dt) {
                 currentState = GameState::Inactive;
                 stateStartTime = currentTime;
             }
+            hasInputThisTurn = false;  // Reset input flag
         }
         break;
     }
 
     // Update matrices for all objects
+    backgroundModel.updateMatrix(true);  // Add this line first
     player.updateMatrix(true);
     golfClub.updateMatrix(true);
-    monkey.updateMatrix(true);
-    mandrill.updateMatrix(true);
-    island.updateMatrix(true);
+    // monkey.updateMatrix(true);
+    // =================
+    monkeyModel.updateMatrix(true);
+    // =============
+    // mandrill.updateMatrix(true);
+    // =================
+    mandrillModel.updateMatrix(true);
+    // ===========
+    // island.updateMatrix(true);
+    islandModel.updateMatrix(true);
     golfBall.updateMatrix(true);
     playerIndicator.updateMatrix(true);
     feedbackCube.updateMatrix(true);
 }
+
+//void HoleInOneScene::handlePlayerInput() {
+//    if (hasInputThisTurn) return;  // Only allow one input per turn
+//
+//    auto& input = Input::get();
+//    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+//    static bool wasLPressed = false;
+//
+//    if (isLPressed && !wasLPressed) {
+//        hasInputThisTurn = true;
+//        float stateTime = currentTime - stateStartTime;
+//
+//        // Check timing windows
+//        TimingResult result = checkTiming(stateTime);
+//
+//        // Update feedback based on timing
+//        switch (result) {
+//        case TimingResult::Perfect:
+//            feedbackCube.color = vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Gold
+//            audio.playSound("holeinone_ballflying");
+//            break;
+//        case TimingResult::Good:
+//            feedbackCube.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);   // Green
+//            audio.playSound("holeinone_ballflying");
+//            break;
+//        case TimingResult::Bad:
+//        case TimingResult::Miss:
+//            feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);   // Red
+//            // Adjust end position for missed shot
+//            ballEndPos = vec3(
+//                (island.localPosition.x + golfBall.localPosition.x) * 0.5f,  // Halfway to island
+//                0.0f,  // Ground level
+//                0.0f
+//            );
+//            break;
+//        }
+//    }
+//
+//    wasLPressed = isLPressed;
+//}
+
+//void HoleInOneScene::handlePlayerInput() {
+//    if (hasInputThisTurn) return;  // Only allow one input per turn
+//
+//    auto& input = Input::get();
+//    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+//    static bool wasLPressed = false;
+//
+//    if (isLPressed && !wasLPressed) {
+//        hasInputThisTurn = true;
+//        float stateTime = currentTime - stateStartTime;
+//
+//        // Check timing windows
+//        TimingResult result = checkTiming(stateTime);
+//
+//        // Store the result for consistency
+//        lastHitResult = result;
+//        validHit = (result == TimingResult::Perfect || result == TimingResult::Good);
+//
+//        // Update feedback based on timing
+//        updateFeedbackCube(result);
+//    }
+//
+//    wasLPressed = isLPressed;
+//}
+
+void HoleInOneScene::handlePlayerInput() {
+    if (hasInputThisTurn) return;
+
+    auto& input = Input::get();
+    bool isLPressed = input.current.keyStates[GLFW_KEY_L] == GLFW_PRESS;
+    static bool wasLPressed = false;
+
+    if (isLPressed && !wasLPressed) {
+        float stateTime = currentTime - stateStartTime;
+
+        // Allow input in both throw states and early BallFlight state
+        if (currentState == GameState::MonkeyThrow ||
+            currentState == GameState::MandrillThrow ||
+            (currentState == GameState::BallFlight && stateTime <= GOOD_WINDOW * 1.5f)) {
+
+            hasInputThisTurn = true;
+            TimingResult result = checkTiming(stateTime);
+            validHit = (result == TimingResult::Perfect || result == TimingResult::Good);
+            updateFeedbackCube(result);
+        }
+    }
+
+    wasLPressed = isLPressed;
+}
+
+void HoleInOneScene::updateFeedbackCube(TimingResult result) {
+    switch (result) {
+    case TimingResult::Perfect:
+        feedbackCube.color = vec4(1.0f, 0.84f, 0.0f, 1.0f);  // Gold
+        feedbackCube.localScale = vec3(0.5f);  // Expanded size
+        audio.playSound("holeinone_ballflying");
+        break;
+    case TimingResult::Good:
+        feedbackCube.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);   // Green
+        feedbackCube.localScale = vec3(0.4f);  // Slightly expanded
+        audio.playSound("holeinone_ballflying");
+        break;
+    case TimingResult::Bad:
+    case TimingResult::Miss:
+        feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);   // Red
+        feedbackCube.localScale = vec3(0.3f);  // Normal size
+        break;
+    }
+}
+
+//HoleInOneScene::TimingResult HoleInOneScene::checkTiming(float stateTime) {
+//    float ballArrivalTime = 0.0;
+//
+//    // Ball arrival time depends on the thrower
+//    if (currentState == GameState::MonkeyThrow) {
+//        ballArrivalTime = BEAT_DURATION;  // Ball arrives after one beat
+//    }
+//    //else {  // MandrillThrow
+//    //    ballArrivalTime = BEAT_DURATION * 4;  // Ball arrives after four beats
+//    //}
+//    else if (currentState == GameState::MandrillThrow) {
+//        ballArrivalTime = BEAT_DURATION * 4.0f;  // Adjust this value to match when the ball actually arrives
+//    }
+//
+//    float timingDiff = abs(stateTime - ballArrivalTime);
+//
+//    // Favor slightly early hits over late hits
+//    if (stateTime < ballArrivalTime) {
+//        // More forgiving for early hits
+//        if (timingDiff <= PERFECT_WINDOW * 1.2f) return TimingResult::Perfect;
+//        if (timingDiff <= GOOD_WINDOW * 1.2f) return TimingResult::Good;
+//        if (timingDiff <= BAD_WINDOW) return TimingResult::Bad;
+//    }
+//    else {
+//        // Stricter for late hits
+//        if (timingDiff <= PERFECT_WINDOW * 0.8f) return TimingResult::Perfect;
+//        if (timingDiff <= GOOD_WINDOW * 0.8f) return TimingResult::Good;
+//        if (timingDiff <= BAD_WINDOW * 0.6f) return TimingResult::Bad;
+//    }
+//    return TimingResult::Miss;
+//}
+
+//HoleInOneScene::TimingResult HoleInOneScene::checkTiming(float stateTime) {
+//    float ballArrivalTime = 0.0f;
+//
+//    if (currentState == GameState::MonkeyThrow) {
+//        ballArrivalTime = BEAT_DURATION;  // Ball arrives after one beat
+//    }
+//    else if (currentState == GameState::MandrillThrow) {
+//        // For mandrill, timing should be right when ball arrives at player
+//        ballArrivalTime = BEAT_DURATION * 0.32f;  // Adjusted for faster mandrill throw
+//    }
+//
+//    float timingDiff = abs(stateTime - ballArrivalTime);
+//
+//    // Tighter timing windows
+//    if (timingDiff <= PERFECT_WINDOW) return TimingResult::Perfect;
+//    if (timingDiff <= GOOD_WINDOW) return TimingResult::Good;
+//    if (timingDiff <= BAD_WINDOW) return TimingResult::Bad;
+//    return TimingResult::Miss;
+//}
+HoleInOneScene::TimingResult HoleInOneScene::checkTiming(float stateTime) {
+    float ballArrivalTime = 0.0f;
+
+    if (currentState == GameState::MonkeyThrow) {
+        ballArrivalTime = BEAT_DURATION;  // Ball arrives after one beat
+    }
+    else if (currentState == GameState::MandrillThrow) {
+        ballArrivalTime = BEAT_DURATION * 0.32f;  // Adjusted for faster mandrill throw
+    }
+    else if (currentState == GameState::BallFlight) {
+        // If we just entered BallFlight state, adjust the timing window
+        ballArrivalTime = 0.0f;  // Since we just entered this state
+    }
+    else {
+        return TimingResult::Miss;  // Invalid state for hitting
+    }
+
+    float timingDiff = abs(stateTime - ballArrivalTime);
+
+    // More forgiving windows for BallFlight state (slightly late hits)
+    if (currentState == GameState::BallFlight) {
+        if (timingDiff <= GOOD_WINDOW * 1.5f) return TimingResult::Good;  // A bit late but still good
+        return TimingResult::Miss;
+    }
+
+    // Normal timing windows for other states
+    if (timingDiff <= PERFECT_WINDOW) return TimingResult::Perfect;
+    if (timingDiff <= GOOD_WINDOW) return TimingResult::Good;
+    if (timingDiff <= BAD_WINDOW) return TimingResult::Bad;
+    return TimingResult::Miss;
+}
+
 
 void HoleInOneScene::startNewPattern() {
     if (currentPattern.isMandrill) {
@@ -260,21 +564,206 @@ vec3 HoleInOneScene::calculateArcPosition(const vec3& start, const vec3& end, fl
         t * t * end;
 }
 
+
 //void HoleInOneScene::updateBallPosition(float t) {
 //    switch (currentState) {
 //    case GameState::MonkeyThrow:
 //        golfBall.localPosition = calculateArcPosition(
 //            ballStartPos, ballEndPos, MONKEY_THROW_HEIGHT, t);
+//
+//        // Check if ball has reached player (similar to mandrill logic)
+//        if (t >= 0.95f) {  // When ball is near player
+//            swingInProgress = true;
+//            // Transition to ball flight
+//            currentState = GameState::BallFlight;
+//            stateStartTime = currentTime;
+//            ballStartPos = getPlayerHitPosition();
+//            ballEndPos = island.localPosition;
+//        }
 //        break;
+//        break;
+//
+//    case GameState::MandrillThrow: {
+//        // Fast linear throw to player
+//        float adjustedT = t * 3.0f; // 3x faster throw
+//        if (adjustedT <= 1.0f) {
+//            // Straight line to player
+//            golfBall.localPosition = mix(ballStartPos, getPlayerHitPosition(), adjustedT);
+//            if (adjustedT >= 0.95f) { // Near end of throw, trigger swing
+//                swingInProgress = true;
+//
+//                // Transition to ball flight
+//                currentState = GameState::BallFlight;
+//                stateStartTime = currentTime;
+//                ballStartPos = getPlayerHitPosition();
+//                ballEndPos = island.localPosition;
+//            }
+//        }
+//        break;
+//    }
 //
 //    case GameState::BallFlight:
+//        // Same arc and timing for both monkey and mandrill hits
 //        golfBall.localPosition = calculateArcPosition(
-//            ballStartPos, ballEndPos, BALL_FLIGHT_HEIGHT, t * 0.5f); // t * 0.5f because it takes 2 beats
+//            ballStartPos, ballEndPos, BALL_FLIGHT_HEIGHT, t * 0.5f); // t * 0.5f for 2-beat duration
+//        break;
+//    }
+//}
+
+//void HoleInOneScene::updateBallPosition(float t) {
+//    switch (currentState) {
+//    case GameState::MonkeyThrow:
+//        golfBall.localPosition = calculateArcPosition(
+//            ballStartPos, ballEndPos, MONKEY_THROW_HEIGHT, t);
+//
+//        // Check if ball has reached player
+//        if (t >= 0.95f) {  // When ball is near player
+//            if (!hasInputThisTurn) {  // If player didn't hit at all
+//                // Ball falls straight down
+//                currentState = GameState::BallFlight;
+//                stateStartTime = currentTime;
+//                ballStartPos = getPlayerHitPosition();
+//                ballEndPos = vec3(getPlayerHitPosition().x, -2.0f, 0.0f); // Fall below ground
+//                feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red
+//            }
+//            else {
+//                swingInProgress = true;
+//                currentState = GameState::BallFlight;
+//                stateStartTime = currentTime;
+//                ballStartPos = getPlayerHitPosition();
+//
+//                if (validHit) {
+//                    ballEndPos = island.localPosition;  // Valid hit goes to island
+//                }
+//                else {
+//                    // Bad hit falls short
+//                    ballEndPos = vec3(
+//                        (island.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+//                        -1.0f,  // Falls below ground level
+//                        0.0f
+//                    );
+//                }
+//            }
+//        }
 //        break;
 //
-//    case GameState::MandrillThrow:
-//        // Straight line for mandrill throw
-//        golfBall.localPosition = mix(ballStartPos, ballEndPos, t);
+//    case GameState::MandrillThrow: {
+//        float adjustedT = t * 3.0f; // 3x faster throw
+//        if (adjustedT <= 1.0f) {
+//            golfBall.localPosition = mix(ballStartPos, getPlayerHitPosition(), adjustedT);
+//            if (adjustedT >= 0.95f) {
+//                if (!hasInputThisTurn) {  // If player didn't hit at all
+//                    // Ball falls straight down
+//                    currentState = GameState::BallFlight;
+//                    stateStartTime = currentTime;
+//                    ballStartPos = getPlayerHitPosition();
+//                    ballEndPos = vec3(getPlayerHitPosition().x, -2.0f, 0.0f); // Fall below ground
+//                    feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);  // Red
+//                }
+//                else {
+//                    swingInProgress = true;
+//                    currentState = GameState::BallFlight;
+//                    stateStartTime = currentTime;
+//                    ballStartPos = getPlayerHitPosition();
+//
+//                    if (validHit) {
+//                        ballEndPos = island.localPosition;  // Valid hit goes to island
+//                    }
+//                    else {
+//                        // Bad hit falls short
+//                        ballEndPos = vec3(
+//                            (island.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+//                            -1.0f,  // Falls below ground level
+//                            0.0f
+//                        );
+//                    }
+//                }
+//            }
+//        }
+//        break;
+//    }
+//
+//    case GameState::BallFlight:
+//        // Use different arc heights based on trajectory
+//        float arcHeight = (ballEndPos == island.localPosition) ? BALL_FLIGHT_HEIGHT : BALL_FLIGHT_HEIGHT * 0.5f;
+//        golfBall.localPosition = calculateArcPosition(
+//            ballStartPos, ballEndPos, arcHeight, t * 0.5f);
+//        break;
+//    }
+//}
+
+//void HoleInOneScene::updateBallPosition(float t) {
+//    switch (currentState) {
+//    case GameState::MonkeyThrow:
+//        golfBall.localPosition = calculateArcPosition(
+//            ballStartPos, ballEndPos, MONKEY_THROW_HEIGHT, t);
+//
+//        if (t >= 0.95f) {  // When ball is near player
+//            currentState = GameState::BallFlight;
+//            stateStartTime = currentTime;
+//            ballStartPos = getPlayerHitPosition();
+//
+//            if (!hasInputThisTurn) {
+//                // No input - ball drops
+//                ballEndPos = vec3(getPlayerHitPosition().x, -2.0f, 0.0f);
+//                feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+//            }
+//            else {
+//                // Use the stored hit result
+//                if (validHit) {
+//                    ballEndPos = island.localPosition;
+//                }
+//                else {
+//                    ballEndPos = vec3(
+//                        (island.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+//                        -1.0f,
+//                        0.0f
+//                    );
+//                }
+//            }
+//            swingInProgress = true;
+//        }
+//        break;
+//
+//    case GameState::MandrillThrow: {
+//        // Faster linear motion for mandrill throw
+//        float adjustedT = t * 3.0f;
+//        if (adjustedT <= 1.0f) {
+//            golfBall.localPosition = mix(ballStartPos, getPlayerHitPosition(), adjustedT);
+//
+//            if (adjustedT >= 0.95f) {
+//                currentState = GameState::BallFlight;
+//                stateStartTime = currentTime;
+//                ballStartPos = getPlayerHitPosition();
+//
+//                if (!hasInputThisTurn) {
+//                    // No input - ball drops
+//                    ballEndPos = vec3(getPlayerHitPosition().x, -2.0f, 0.0f);
+//                    feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+//                }
+//                else {
+//                    // Use the stored hit result
+//                    if (validHit) {
+//                        ballEndPos = island.localPosition;
+//                    }
+//                    else {
+//                        ballEndPos = vec3(
+//                            (island.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+//                            -1.0f,
+//                            0.0f
+//                        );
+//                    }
+//                }
+//                swingInProgress = true;
+//            }
+//        }
+//        break;
+//    }
+//
+//    case GameState::BallFlight:
+//        float arcHeight = (ballEndPos == island.localPosition) ? BALL_FLIGHT_HEIGHT : BALL_FLIGHT_HEIGHT * 0.5f;
+//        golfBall.localPosition = calculateArcPosition(
+//            ballStartPos, ballEndPos, arcHeight, t * 0.5f);
 //        break;
 //    }
 //}
@@ -283,109 +772,83 @@ void HoleInOneScene::updateBallPosition(float t) {
     case GameState::MonkeyThrow:
         golfBall.localPosition = calculateArcPosition(
             ballStartPos, ballEndPos, MONKEY_THROW_HEIGHT, t);
+
+        if (t >= 0.95f) {  // When ball is near player
+            currentState = GameState::BallFlight;
+            stateStartTime = currentTime;
+            ballStartPos = getPlayerHitPosition();
+
+            // Don't set ballEndPos yet - wait for potential late input
+            swingInProgress = true;
+        }
         break;
 
     case GameState::MandrillThrow: {
-        // Fast linear throw to player
-        float adjustedT = t * 3.0f; // 3x faster throw
+        float adjustedT = t * 3.0f;
         if (adjustedT <= 1.0f) {
-            // Straight line to player
             golfBall.localPosition = mix(ballStartPos, getPlayerHitPosition(), adjustedT);
-            if (adjustedT >= 0.95f) { // Near end of throw, trigger swing
-                swingInProgress = true;
 
-                // Transition to ball flight
+            if (adjustedT >= 0.95f) {
                 currentState = GameState::BallFlight;
                 stateStartTime = currentTime;
                 ballStartPos = getPlayerHitPosition();
-                ballEndPos = island.localPosition;
+
+                // Don't set ballEndPos yet - wait for potential late input
+                swingInProgress = true;
             }
         }
         break;
     }
 
-    case GameState::BallFlight:
-        // Same arc and timing for both monkey and mandrill hits
+    case GameState::BallFlight: {
+        // Only determine trajectory if we haven't already
+        static bool trajectorySet = false;
+        if (!trajectorySet) {
+            if (hasInputThisTurn && validHit) {
+                // ballEndPos = island.localPosition;
+                ballEndPos = islandModel.localPosition;
+            }
+            else if (currentTime - stateStartTime > GOOD_WINDOW * 1.5f) {
+                // If we're past the late hit window and no valid hit recorded
+                if (!hasInputThisTurn) {
+                    // No input - straight down
+                    ballEndPos = vec3(getPlayerHitPosition().x, -2.0f, 0.0f);
+                    feedbackCube.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+                }
+                else if (!validHit) {
+                    // Bad hit - falls short
+                    // ballEndPos = vec3(
+                    //     (island.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+                    //     -1.0f,
+                    //     0.0f
+                    // );
+                                        ballEndPos = vec3(
+                        (islandModel.localPosition.x + getPlayerHitPosition().x) * 0.5f,
+                        -1.0f,
+                        0.0f
+                    );
+                }
+                trajectorySet = true;
+            }
+            // Otherwise, keep waiting for potential late input
+        }
+
+        // Calculate position along trajectory
+        // float arcHeight = (ballEndPos == island.localPosition) ? BALL_FLIGHT_HEIGHT : BALL_FLIGHT_HEIGHT * 0.5f;
+        float arcHeight = (ballEndPos == islandModel.localPosition) ? BALL_FLIGHT_HEIGHT : BALL_FLIGHT_HEIGHT * 0.5f;
+
         golfBall.localPosition = calculateArcPosition(
-            ballStartPos, ballEndPos, BALL_FLIGHT_HEIGHT, t * 0.5f); // t * 0.5f for 2-beat duration
+            ballStartPos, ballEndPos, arcHeight, t * 0.5f);
+
+        // Reset trajectory flag when state changes
+        if (t >= 1.0f) {
+            trajectorySet = false;
+        }
         break;
+    }
     }
 }
 
-//void HoleInOneScene::updateGolfClub(float dt) {
-//    // Calculate base position (pivot point should be away from player)
-//    vec3 pivotPoint = player.localPosition + vec3(-PLAYER_BALL_OFFSET - GOLF_CLUB_LENGTH / 2, 0.0f, 0.0f);
-//
-//    if (currentState == GameState::MonkeyThrow) {
-//        // Prepare for swing as ball approaches
-//        float throwProgress = (currentTime - stateStartTime) / BEAT_DURATION;
-//        if (throwProgress > 0.8f) {  // Start backswing near end of throw
-//            golfClubAngle = 45.0f * (1.0f - (throwProgress - 0.8f) / 0.2f);
-//        }
-//    }
-//    else if (currentState == GameState::BallFlight) {
-//        // Follow through after hitting
-//        float flightProgress = (currentTime - stateStartTime) / BEAT_DURATION;
-//        if (flightProgress < 0.2f) {  // Quick follow through
-//            golfClubAngle = -90.0f * flightProgress / 0.2f;
-//        }
-//        else {
-//            // Slowly return to rest position
-//            golfClubAngle = -90.0f + (45.0f + 90.0f) * (flightProgress - 0.2f) / 1.8f;
-//        }
-//    }
-//    else if (currentState == GameState::MandrillThrow) {
-//        // Instant swing for mandrill throw
-//        float throwProgress = (currentTime - stateStartTime) / BEAT_DURATION;
-//        if (throwProgress < 0.1f) {
-//            golfClubAngle = -90.0f * throwProgress / 0.1f;
-//        }
-//        else {
-//            golfClubAngle = -90.0f + (45.0f + 90.0f) * (throwProgress - 0.1f) / 0.9f;
-//        }
-//    }
-//    else {
-//        // Return to rest position
-//        golfClubAngle = glm::mix(golfClubAngle, 45.0f, dt * 5.0f);
-//    }
-//
-//    // Update golf club position and rotation
-//    golfClub.localPosition = pivotPoint;
-//    golfClub.localRotation = vec3(0.0f, 0.0f, golfClubAngle);
-//}
-//void HoleInOneScene::updateGolfClub(float dt) {
-//    // The grip (top) should be closer to player, club head further away
-//    vec3 gripPos = player.localPosition + vec3(0.2f, 0.5f, 0.0f);  // Grip position near player
-//    golfClub.localPosition = gripPos;
-//
-//    // Rest position has club head away from player at roughly 45 degrees
-//    if (currentState == GameState::MonkeyThrow || currentState == GameState::MandrillThrow) {
-//        float throwProgress = (currentTime - stateStartTime) / BEAT_DURATION;
-//
-//        if (throwProgress > 0.8f) {  // Start backswing as ball approaches
-//            // Lift club up and back for backswing
-//            float backswingT = (throwProgress - 0.8f) / 0.2f;
-//            golfClub.localRotation = vec3(0.0f, -90.0f * backswingT, 45.0f);  // Rotate back around Y-axis
-//        }
-//    }
-//    else if (currentState == GameState::BallFlight) {
-//        // Forward swing and follow through
-//        float swingProgress = (currentTime - stateStartTime) / (BEAT_DURATION * 0.2f);
-//        if (swingProgress < 1.0f) {
-//            float swingT = std::min(swingProgress, 1.0f);
-//            // Swing through from back position to follow through
-//            golfClub.localRotation = vec3(0.0f, -90.0f + (180.0f * swingT), 45.0f);
-//        }
-//        else {
-//            // Return to rest
-//            golfClub.localRotation = vec3(0.0f, 0.0f, 45.0f);
-//        }
-//    }
-//    else {
-//        // Rest position
-//        golfClub.localRotation = vec3(0.0f, 0.0f, 45.0f);
-//    }
-//}
 void HoleInOneScene::updateGolfClub(float dt) {
     // Club handle at player's hands (adjust if needed)
     vec3 playerHandPos = player.localPosition;
@@ -396,41 +859,41 @@ void HoleInOneScene::updateGolfClub(float dt) {
 
     float phase = (currentTime - stateStartTime) / BEAT_DURATION;
 
-    // Start angle at rest is 120°, as requested
+    // Start angle at rest is 120ï¿½, as requested
     float angleY = 120.0f;
 
     switch (currentState) {
     case GameState::MonkeyThrow:
         // MonkeyThrow: from phase=0 to phase=1
-        // Increase angle from 120° at start to 180° at impact
+        // Increase angle from 120ï¿½ at start to 180ï¿½ at impact
         if (phase < 0.0f) phase = 0.0f;
         if (phase > 1.0f) phase = 1.0f;
-        // angleY = 120° + (180° - 120°)*phase = 120° + 60°*phase
-        // at phase=0: angleY=120°, at phase=1: angleY=180°
+        // angleY = 120ï¿½ + (180ï¿½ - 120ï¿½)*phase = 120ï¿½ + 60ï¿½*phase
+        // at phase=0: angleY=120ï¿½, at phase=1: angleY=180ï¿½
         angleY = 120.0f + 60.0f * phase;
         break;
 
     case GameState::BallFlight:
         // BallFlight: let's say it lasts 2 beats
-        // We continue from angleY=180° at start (phase=0) to angleY=220° at phase=2
+        // We continue from angleY=180ï¿½ at start (phase=0) to angleY=220ï¿½ at phase=2
         if (phase < 0.0f) phase = 0.0f;
         if (phase > 2.0f) phase = 2.0f;
-        // angleY = 180° + (220° - 180°)*(phase/2.0) = 180° + 40°*(phase/2)
-        // at phase=0: angleY=180°, at phase=2: angleY=220°
+        // angleY = 180ï¿½ + (220ï¿½ - 180ï¿½)*(phase/2.0) = 180ï¿½ + 40ï¿½*(phase/2)
+        // at phase=0: angleY=180ï¿½, at phase=2: angleY=220ï¿½
         angleY = 180.0f + 40.0f * (phase / 2.0f);
         break;
 
     case GameState::MandrillThrow:
-        // Similar to MonkeyThrow, but let's say we go from 120° at start to 150° at end
+        // Similar to MonkeyThrow, but let's say we go from 120ï¿½ at start to 150ï¿½ at end
         if (phase < 0.0f) phase = 0.0f;
         if (phase > 1.0f) phase = 1.0f;
-        // angleY = 120° + (150° - 120°)*phase
-        // at phase=0: angleY=120°, at phase=1: angleY=150°
+        // angleY = 120ï¿½ + (150ï¿½ - 120ï¿½)*phase
+        // at phase=0: angleY=120ï¿½, at phase=1: angleY=150ï¿½
         angleY = 120.0f + 30.0f * phase;
         break;
 
     default:
-        // Not in a throwing state, smoothly return to rest angle = 120°
+        // Not in a throwing state, smoothly return to rest angle = 120ï¿½
         angleY = glm::mix(angleY, 120.0f, dt * 5.0f);
         break;
     }
@@ -467,6 +930,26 @@ HoleInOneScene::ThrowPattern HoleInOneScene::selectNextPattern() {
 void HoleInOneScene::render(const mat4& projection, const mat4& view, bool isShadow) {
     auto& jr = AnimationObjectRenderer::get();
 
+    // ==================================
+        // Render model objects first
+        // Render background first
+    jr.beginBatchRender(backgroundModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(backgroundModel, isShadow);
+    jr.endBatchRender(isShadow);
+
+    jr.beginBatchRender(monkeyModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(monkeyModel, isShadow);
+    jr.endBatchRender(isShadow);
+        
+    jr.beginBatchRender(mandrillModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(mandrillModel, isShadow);
+    jr.endBatchRender(isShadow);
+
+        jr.beginBatchRender(islandModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(islandModel, isShadow);
+    jr.endBatchRender(isShadow);
+    //==================================
+
     // Render all box-type objects
     jr.beginBatchRender(AnimationObjectType::box, false, vec4(1.f), isShadow);
 
@@ -482,9 +965,9 @@ void HoleInOneScene::render(const mat4& projection, const mat4& view, bool isSha
     // Render main characters
     jr.renderBatchWithOwnColor(player, isShadow);
     jr.renderBatchWithOwnColor(golfClub, isShadow);
-    jr.renderBatchWithOwnColor(monkey, isShadow);
-    jr.renderBatchWithOwnColor(mandrill, isShadow);
-    jr.renderBatchWithOwnColor(island, isShadow);
+    // jr.renderBatchWithOwnColor(monkey, isShadow);
+    // jr.renderBatchWithOwnColor(mandrill, isShadow);
+    // jr.renderBatchWithOwnColor(island, isShadow);
 
     // Only render ball if visible
     if (golfBall.visible) {
@@ -531,11 +1014,18 @@ void HoleInOneScene::renderUI() {
 
 ptr_vector<AnimationObject> HoleInOneScene::getObjects() {
     ptr_vector<AnimationObject> objects;
+    objects.push_back(&backgroundModel); // Add background first
+
     objects.push_back(&player);
     objects.push_back(&golfClub);
-    objects.push_back(&monkey);
-    objects.push_back(&mandrill);
-    objects.push_back(&island);
+    // objects.push_back(&monkey);
+    // objects.push_back(&mandrill);
+    // ===============================
+    objects.push_back(&monkeyModel); 
+    objects.push_back(&mandrillModel); 
+    objects.push_back(&islandModel); 
+    // ===============================
+    // objects.push_back(&island);
     if (golfBall.visible) {
         objects.push_back(&golfBall);
     }

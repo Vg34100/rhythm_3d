@@ -22,6 +22,13 @@ private:
     AnimationObject island;      // Destination island
     AnimationObject golfBall;    // The golf ball being thrown/hit
 
+
+    AnimationObject mandrillModel;  // HIO_Monkey.obj
+    AnimationObject monkeyModel;  // HIO_Mandrill.obj
+    AnimationObject islandModel;  // HIO_Island.obj
+    AnimationObject backgroundModel;  // HIO_background.obj
+
+
     // UI Elements
     AnimationObject playerIndicator;  // Yellow indicator above player
     AnimationObject feedbackCube;     // Feedback cube for timing
@@ -38,12 +45,20 @@ private:
         MandrillThrow   // Throw and instant hit
     };
 
+    // Input timing results
+    enum class TimingResult {
+        Perfect,
+        Good,
+        Bad,
+        Miss
+    };
+
     struct ThrowPattern {
         bool isMandrill;
         int waitBeats;  // 0-2 beats between patterns
     };
 
-    // Timing and Animation
+    // Timing and Animation Constants
     const float BPM = 115.0f;
     const float BEAT_DURATION = 60.0f / BPM;
     const float PREP_COLOR_INTENSITY = 0.3f;     // Color change during prep
@@ -54,11 +69,16 @@ private:
     const float MONKEY_THROW_HEIGHT = 3.0f;      // Height of monkey's throw arc
     const float BALL_FLIGHT_HEIGHT = 5.0f;       // Height of ball flight to island
 
+    // Input timing windows (in seconds)
+    const float PERFECT_WINDOW = 0.05f;  // �0.05s for perfect
+    const float GOOD_WINDOW = 0.15f;      // �0.1s for good
+    const float BAD_WINDOW = 0.25f;       // �0.2s for bad, beyond is miss
+    bool soundPlayed = false;
+
     GameState currentState;
     float currentBeat;
     float stateStartTime;
     float currentTime;
-
     ThrowPattern currentPattern;
     vec3 ballStartPos;
     vec3 ballEndPos;
@@ -67,6 +87,13 @@ private:
     float golfClubAngle;        // Current angle of the golf club
     bool swingInProgress;       // Whether a swing is currently happening
     float swingProgress;        // Progress of current swing (0 to 1)
+    bool hasInputThisTurn;      // Track if player has input during current turn
+
+    bool validHit;
+    TimingResult lastHitResult;
+
+    // Audio system reference
+    AudioSystem& audio;
 
     // Helper methods
     void updateBallPosition(float t);
@@ -77,4 +104,8 @@ private:
     void startNewPattern();
     vec3 getThrowPosition(bool isMandrill) const;  // Gets position in front of thrower
     vec3 getPlayerHitPosition() const;             // Gets position where player should hit ball
+    void handlePlayerInput();                      // New method for input handling
+    TimingResult checkTiming(float stateTime);     // New method for checking input timing
+    void updateFeedbackCube(TimingResult result);
+
 };

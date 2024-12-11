@@ -58,6 +58,13 @@ void AudioSystem::loadScene(const std::string& sceneName) {
 
         };
     }
+    else if (sceneName == "holeinone") {
+        soundIds = {
+            "holeinone_monkeythrow",
+            "holeinone_mandrillthrow",
+            "holeinone_ballflying",
+        };
+    }
 
     bool anyLoadFailed = false;
     for (const auto& soundId : soundIds) {

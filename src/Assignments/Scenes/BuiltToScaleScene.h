@@ -14,6 +14,13 @@ public:
     ptr_vector<AnimationObject> getObjects() override;
 
 private:
+    // Visual objects with models
+    AnimationObject poleModel;  // BTS_PlayerPoleModel.obj
+    AnimationObject leftGuideModel;  // BTS_PlayerWidgetModel.obj
+    AnimationObject rightGuideModel; // BTS_PlayerWidgetModel.obj
+    std::vector<AnimationObject> springModels;  // Mix of BTS_PlayerSpringModel and BTS_OtherSpringModel
+    AnimationObject backgroundModel;
+
     // Visual objects
     std::vector<AnimationObject> springs;
     AnimationObject pole;

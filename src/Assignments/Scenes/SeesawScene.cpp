@@ -6,6 +6,7 @@
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtx/fast_exponential.hpp>
 #include <random>
+#include <Textures.h>
 
 SeesawScene::SeesawScene()
     : currentState(GameState::StartSequence)
@@ -34,6 +35,103 @@ SeesawScene::SeesawScene()
 SeesawScene::~SeesawScene() {}
 
 void SeesawScene::init() {
+    // ===================================================
+    // Initialize player stand model
+    playerStandModel = AnimationObject(AnimationObjectType::model);
+    playerStandModel.meshName = "../assets/models/seesaw/SS_InspectorRight.obj";
+    
+    // Create and register texture
+    auto playerTexture = std::make_shared<Texture>(
+        "../assets/models/seesaw/SS_InspectorRightTexture.png");
+    TextureRegistry::addTexture(playerTexture);
+    playerStandModel.texture = reinterpret_cast<void*>(playerTexture->id);
+    
+    // Set up model properties
+    playerStandModel.localScale = vec3(1.0f);
+    playerStandModel.color = vec4(1.0f);
+    playerStandModel.updateMatrix(true);
+
+    // Initialize player jump model
+    playerJumpModel = AnimationObject(AnimationObjectType::model);
+    playerJumpModel.meshName = "../assets/models/seesaw/SS_InspectorRightJump.obj";
+    
+    // Can reuse the same texture
+    playerJumpModel.texture = reinterpret_cast<void*>(playerTexture->id);
+    
+    // Set up model properties
+    playerJumpModel.localScale = vec3(1.0f);
+    playerJumpModel.color = vec4(1.0f);
+    playerJumpModel.updateMatrix(true);
+
+    // ====
+        // Initialize player fall model
+    playerFallModel = AnimationObject(AnimationObjectType::model);
+    playerFallModel.meshName = "../assets/models/seesaw/SS_InspectorRightFall.obj";
+    
+    // Reuse the same texture
+    playerFallModel.texture = reinterpret_cast<void*>(playerTexture->id);
+    
+    // Set up model properties
+    playerFallModel.localScale = vec3(1.0f);
+    playerFallModel.color = vec4(1.0f);
+    playerFallModel.updateMatrix(true);
+
+    // ===================================================
+
+
+
+
+
+
+
+
+// ===================================================
+    // Initialize player stand model
+    npcStandModel = AnimationObject(AnimationObjectType::model);
+    npcStandModel.meshName = "../assets/models/seesaw/SS_InspectorLeft.obj";
+    
+    // Create and register texture
+    auto npcTexture = std::make_shared<Texture>(
+        "../assets/models/seesaw/SS_InspectorRightTexture.png"); // TODO: Change this
+    TextureRegistry::addTexture(npcTexture);
+    npcStandModel.texture = reinterpret_cast<void*>(npcTexture->id);
+    
+    // Set up model properties
+    npcStandModel.localScale = vec3(1.0f);
+    npcStandModel.color = vec4(1.0f);
+    npcStandModel.updateMatrix(true);
+
+    // Initialize player jump model
+    npcJumpModel = AnimationObject(AnimationObjectType::model);
+    npcJumpModel.meshName = "../assets/models/seesaw/SS_InspectorLeftJump.obj";
+    
+    // Can reuse the same texture
+    npcJumpModel.texture = reinterpret_cast<void*>(npcTexture->id);
+    
+    // Set up model properties
+    npcJumpModel.localScale = vec3(1.0f);
+    npcJumpModel.color = vec4(1.0f);
+    npcJumpModel.updateMatrix(true);
+
+    // ====
+        // Initialize player fall model
+    npcFallModel = AnimationObject(AnimationObjectType::model);
+    npcFallModel.meshName = "../assets/models/seesaw/SS_InspectorLeftFall.obj";
+    
+    // Reuse the same texture
+    npcFallModel.texture = reinterpret_cast<void*>(npcTexture->id);
+    
+    // Set up model properties
+    npcFallModel.localScale = vec3(1.0f);
+    npcFallModel.color = vec4(1.0f);
+    npcFallModel.updateMatrix(true);
+
+    // ===================================================
+
+
+
+
+
     // Initialize seesaw
     seesaw = AnimationObject(AnimationObjectType::box);
     seesaw.localScale = vec3(seesawLength, 0.2f, 1.0f);
@@ -41,11 +139,11 @@ void SeesawScene::init() {
 
     // Initialize characters
     playerCharacter = AnimationObject(AnimationObjectType::box);
-    playerCharacter.localScale = vec3(0.8f);
+    playerCharacter.localScale = vec3(0.0f);
     playerCharacter.color = vec4(0.2f, 0.6f, 1.0f, 1.0f);
 
     npcCharacter = AnimationObject(AnimationObjectType::box);
-    npcCharacter.localScale = vec3(0.8f);
+    npcCharacter.localScale = vec3(0.0f);
     npcCharacter.color = vec4(1.0f, 0.4f, 0.4f, 1.0f);
 
     // Initialize feedback cube
@@ -297,6 +395,14 @@ void SeesawScene::update(double now, float dt) {
     // Update matrices
     seesaw.updateMatrix(true);
     playerCharacter.updateMatrix(true);
+
+    playerStandModel.updateMatrix(true);
+    playerJumpModel.updateMatrix(true);
+    playerFallModel.updateMatrix(true);
+    npcStandModel.updateMatrix(true);
+    npcJumpModel.updateMatrix(true);
+    npcFallModel.updateMatrix(true);
+
     npcCharacter.updateMatrix(true);
     feedbackCube.updateMatrix(true);
     playerIndicator.updateMatrix(true);
@@ -305,10 +411,31 @@ void SeesawScene::update(double now, float dt) {
 void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& character, float dt) {
     if (!state.isJumping) {
         // If not jumping, ensure character is at correct position
-        character.localPosition = getPositionForCharacter(
+        // character.localPosition = getPositionForCharacter(
+        //     &character == &playerCharacter,
+        //     state.currentPos
+        // );
+
+        vec3 groundedPos = getPositionForCharacter(
             &character == &playerCharacter,
             state.currentPos
         );
+
+        if (&character == &playerCharacter) {
+            character.localPosition = groundedPos;
+// 
+            playerStandModel.localPosition = groundedPos;
+            playerJumpModel.localPosition = groundedPos;
+            playerFallModel.localPosition = groundedPos;
+            currentPlayerModel = PlayerModelState::Standing;
+        } else {
+            character.localPosition = groundedPos;
+            // Update NPC model positions
+            npcStandModel.localPosition = groundedPos;
+            npcJumpModel.localPosition = groundedPos;
+            npcFallModel.localPosition = groundedPos;
+            currentNPCModel = PlayerModelState::Standing;
+        }
         return;
     }
 
@@ -334,7 +461,57 @@ void SeesawScene::updateCharacterJump(CharacterState& state, AnimationObject& ch
     vec3 peakPos = (startPos + endPos) * 0.5f + vec3(0.0f, actualJumpHeight, 0.0f);
 
     // Update position with new arc movement
-    character.localPosition = calculateJumpPosition(phase, startPos, endPos, peakPos);
+    // character.localPosition = calculateJumpPosition(phase, startPos, endPos, peakPos);
+        // Calculate new position
+    vec3 newPos = calculateJumpPosition(phase, startPos, endPos, peakPos);
+
+    // Update position based on whether it's the player or NPC
+    if (&character == &playerCharacter) {
+        // Update all model positions
+        playerStandModel.localPosition = newPos;
+        playerJumpModel.localPosition = newPos;
+        playerFallModel.localPosition = newPos;
+
+        // Determine which model to show based on vertical movement
+        static vec3 lastPos = newPos;
+        float verticalVelocity = newPos.y - lastPos.y;
+        
+        // Add some threshold to avoid flickering
+        const float VELOCITY_THRESHOLD = 0.01f;
+        
+        if (abs(verticalVelocity) < VELOCITY_THRESHOLD && phase > 0.98f) {
+            currentPlayerModel = PlayerModelState::Standing;
+        } else if (verticalVelocity > VELOCITY_THRESHOLD) {
+            currentPlayerModel = PlayerModelState::Jumping;
+        } else if (verticalVelocity < -VELOCITY_THRESHOLD) {
+            currentPlayerModel = PlayerModelState::Falling;
+        }
+        
+        lastPos = newPos;
+    } else {
+        // Update NPC model positions
+        npcStandModel.localPosition = newPos;
+        npcJumpModel.localPosition = newPos;
+        npcFallModel.localPosition = newPos;
+
+        // Determine which model to show based on vertical movement
+        static vec3 lastNPCPos = newPos;
+        float verticalVelocity = newPos.y - lastNPCPos.y;
+        
+        const float VELOCITY_THRESHOLD = 0.01f;
+        
+        if (abs(verticalVelocity) < VELOCITY_THRESHOLD && phase > 0.98f) {
+            currentNPCModel = PlayerModelState::Standing;
+        } else if (verticalVelocity > VELOCITY_THRESHOLD) {
+            currentNPCModel = PlayerModelState::Jumping;
+        } else if (verticalVelocity < -VELOCITY_THRESHOLD) {
+            currentNPCModel = PlayerModelState::Falling;
+        }
+        
+        lastNPCPos = newPos;
+        // =
+        character.localPosition = newPos;
+    }
 }
 
 //void SeesawScene::updateSeesawTilt(float dt) {
@@ -657,6 +834,47 @@ void SeesawScene::render(const mat4& projection, const mat4& view, bool isShadow
     jr.renderBatchWithOwnColor(seesaw, isShadow);
     jr.endBatchRender(isShadow);
 
+    // // Render appropriate player model based on state
+    // jr.beginBatchRender(isPlayerJumping ? playerJumpModel : playerStandModel, false, vec4(1.f), isShadow);
+    // jr.renderBatchWithOwnColor(isPlayerJumping ? playerJumpModel : playerStandModel, isShadow);
+    // jr.endBatchRender(isShadow);
+        // Render appropriate player model based on state
+    AnimationObject* currentModel = &playerStandModel;
+    switch (currentPlayerModel) {
+        case PlayerModelState::Jumping:
+            currentModel = &playerJumpModel;
+            break;
+        case PlayerModelState::Falling:
+            currentModel = &playerFallModel;
+            break;
+        default:
+            currentModel = &playerStandModel;
+            break;
+    }
+
+    jr.beginBatchRender(*currentModel, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(*currentModel, isShadow);
+    jr.endBatchRender(isShadow);
+
+        // Render NPC model
+    AnimationObject* currentNPCModelrender = &npcStandModel;
+    switch (currentNPCModel) {
+        case PlayerModelState::Jumping:
+            currentNPCModelrender = &npcJumpModel;
+            break;
+        case PlayerModelState::Falling:
+            currentNPCModelrender = &npcFallModel;
+            break;
+        default:
+            currentNPCModelrender = &npcStandModel;
+            break;
+    }
+
+    jr.beginBatchRender(*currentNPCModelrender, false, vec4(1.f), isShadow);
+    jr.renderBatchWithOwnColor(*currentNPCModelrender, isShadow);
+    jr.endBatchRender(isShadow);
+
+
     // Render characters and indicators
     jr.beginBatchRender(playerCharacter.shapeType, false, vec4(1.f), isShadow);
     jr.renderBatchWithOwnColor(playerCharacter, isShadow);
@@ -819,6 +1037,12 @@ void SeesawScene::initializePositions() {
 
     // Set initial positions with new offsets
     playerCharacter.localPosition = getPositionForCharacter(true, Position::FarSide);
+
+    playerStandModel.localPosition = getPositionForCharacter(true, Position::FarSide);
+    playerJumpModel.localPosition = getPositionForCharacter(true, Position::FarSide);
+    playerFallModel.localPosition = getPositionForCharacter(true, Position::FarSide);
+
+
     npcCharacter.localPosition = vec3(-SEESAW_LENGTH * 0.5f - 2.0f, 2.0f, 0.0f);
 
     // Position player indicator
@@ -896,7 +1120,40 @@ vec3 SeesawScene::calculateSeesawEndPoint(float side, float tiltAngle) {
 }
 
 ptr_vector<AnimationObject> SeesawScene::getObjects() {
-    return { &seesaw, &playerCharacter, &npcCharacter, &feedbackCube, &playerIndicator };
+    // return { &seesaw, &playerCharacter, &npcCharacter, &feedbackCube, &playerIndicator };
+        ptr_vector<AnimationObject> objects;
+    objects.push_back(&seesaw);
+    objects.push_back(&playerCharacter);
+    // Add appropriate player model based on state
+    switch (currentPlayerModel) {
+        case PlayerModelState::Jumping:
+            objects.push_back(&playerJumpModel);
+            break;
+        case PlayerModelState::Falling:
+            objects.push_back(&playerFallModel);
+            break;
+        default:
+            objects.push_back(&playerStandModel);
+            break;
+    }    
+    
+    switch (currentNPCModel) {
+        case PlayerModelState::Jumping:
+            objects.push_back(&npcJumpModel);
+            break;
+        case PlayerModelState::Falling:
+            objects.push_back(&npcFallModel);
+            break;
+        default:
+            objects.push_back(&npcStandModel);
+            break;
+    }
+
+    objects.push_back(&npcCharacter);
+
+    objects.push_back(&feedbackCube);
+    objects.push_back(&playerIndicator);
+    return objects;
 }
 
 vec4 SeesawScene::getTimingResultColor(TimingResult result) {
