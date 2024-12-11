@@ -1,5 +1,5 @@
 // CMPS 4480 Final Project
-// Name: 
+// Name: Pablo Rodriguez Quinonez
 
 #include "FinalProject.h"
 #include "Application.h"
@@ -48,17 +48,6 @@ void FinalProject::init() {
     lastFrameChange = getTime();
 }
 
-//void FinalProject::update() {
-//	if (!currentScene) init();
-//
-//    double now = getTime();
-//    float dt = static_cast<float>(now - lastFrameChange);
-//    lastFrameChange = now;
-//
-//    if (currentScene) {
-//        currentScene->update(now, dt);
-//    }
-//}
 void FinalProject::update() {
     if (!currentScene) init();
 
@@ -66,7 +55,6 @@ void FinalProject::update() {
     float dt = static_cast<float>(now - lastFrameChange);
     lastFrameChange = now;
 
-    // Update remix mode logic
     if (remixData.enabled) {
         remixData.timeInCurrentScene += dt;
 
@@ -106,7 +94,6 @@ void FinalProject::render(const mat4& projection, const mat4& view, s_ptr<Frameb
     }
 }
 
-// Renders the UI controls for the lab.
 void FinalProject::renderUI() {
     if (ImGui::CollapsingHeader("Scene Selection")) {
         // Add Remix Mode controls

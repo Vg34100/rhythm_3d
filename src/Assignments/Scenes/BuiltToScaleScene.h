@@ -31,7 +31,7 @@ private:
         Normal,
         Failed,
         Respawning,
-        Launching    // New state for launch animation
+        Launching
     };
 
     // Pattern types
@@ -113,14 +113,12 @@ private:
 
     AnimationObject leftGuideSquare;
     AnimationObject rightGuideSquare;
-    float guideSquareWidth = 1.0f;      // Width of each guide square
-    float guideForwardOffset = 5.0f;     // Fixed distance in front of springs
-    bool guidesActive = false;           // Track if guides are currently in use
-    // Add these to your private function declarations
+    float guideSquareWidth = 1.0f;
+    float guideForwardOffset = 5.0f;
+    bool guidesActive = false;
     void spawnGuideSquares();
     void moveGuideSquares();
 
-    // Add these to your private member variables
     struct {
         bool isAnimating;
         float animationTime;
@@ -136,5 +134,4 @@ private:
     AudioSystem& audio;
     void playRandomImpactSound();
     const std::vector<int> TEMPO_BPM = { 76, 80, 98, 110, 120, 140 };
-    //float bounceDuration;
 };

@@ -1,8 +1,4 @@
 // AudioSystem.cpp
-// Implementation of the Audio System using Windows Multimedia API
-// Each scene manages its own collection of sounds, and the system
-// ensures proper loading/unloading when switching scenes.
-
 #include "AudioSystem.h"
 #include <iostream>
 #include <filesystem>
@@ -151,57 +147,6 @@ std::string AudioSystem::buildSoundPath(const std::string& soundId) {
         std::cout << "Could not find sound file anywhere!" << std::endl;
         return path; // Return original path even though it doesn't exist
     }
-}
-
-bool AudioSystem::testAudioPlayback() {
-    // First try a simple beep using Windows API
-    //std::cout << "Testing basic Windows sound..." << std::endl;
-    //Beep(440, 500); // 440Hz for 500ms
-
-    //// Try to play a test WAV file
-    //std::string testPath = "test.wav";
-    //std::cout << "Attempting to play test WAV at: " << std::filesystem::absolute(testPath).string() << std::endl;
-
-
-    //std::wstring wtestPath(testPath.begin(), testPath.end());
-    //bool success = PlaySoundW(wtestPath.c_str(), NULL, SND_FILENAME | SND_SYNC);
-    //if (success) {
-    //    std::cout << "Successfully played test WAV" << std::endl;
-    //}
-    //else {
-    //    std::cout << "Failed to play test WAV" << std::endl;
-    //}
-
-    return true;
-}
-
-void AudioSystem::debugPrintPaths() {
-    // Print current working directory
-    //wchar_t wbuffer[MAX_PATH];
-    //GetCurrentDirectoryW(MAX_PATH, wbuffer);
-    //char buffer[MAX_PATH];
-    //wcstombs(buffer, wbuffer, MAX_PATH);
-    //std::cout << "Current working directory: " << buffer << std::endl;
-
-    //// Print module path (exe location)
-    //GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
-    //wcstombs(buffer, wbuffer, MAX_PATH);
-    //std::cout << "Executable path: " << buffer << std::endl;
-
-    //// Print assets path
-    //std::string assetsPath = "assets/audio/tambourine/";
-    //std::cout << "Trying to access assets at: " << std::filesystem::absolute(assetsPath).string() << std::endl;
-
-    //// List all files in current directory
-    //std::cout << "\nFiles in current directory:" << std::endl;
-    //try {
-    //    for (const auto& entry : std::filesystem::directory_iterator(".")) {
-    //        std::cout << entry.path().string() << std::endl;
-    //    }
-    //}
-    //catch (const std::filesystem::filesystem_error& e) {
-    //    std::cout << "Error listing directory: " << e.what() << std::endl;
-    //}
 }
 
 bool AudioSystem::doesFileExist(const std::string& filepath) {

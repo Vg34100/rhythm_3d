@@ -25,8 +25,6 @@ public:
     void update(); // Called every frame to clean up finished sounds
 
     // Debug helpers
-    bool testAudioPlayback();
-    void debugPrintPaths();
     bool doesFileExist(const std::string& filepath);
 
 private:

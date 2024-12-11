@@ -44,7 +44,7 @@ private:
     AnimationObject playerIndicator;
 
     // ========================
-        // Model objects
+    // Model objects
     AnimationObject playerStandModel;  // SS_InspectorRight
     AnimationObject playerJumpModel;   // SS_InspectorRightJump
     AnimationObject playerFallModel;   // SS_InspectorRightFall
@@ -56,7 +56,7 @@ private:
 
     PlayerModelState currentPlayerModel = PlayerModelState::Standing;    
     // ==========================
-
+    // Model objects
     AnimationObject npcStandModel;    // SS_InspectorLeft
     AnimationObject npcJumpModel;     // SS_InspectorLeftJump
     AnimationObject npcFallModel;     // SS_InspectorLeftFall
@@ -100,10 +100,6 @@ private:
     CharacterState npcState;
     GameState currentState;
 
-    // Position constants
-    //const float FAR_POSITION_OFFSET = 0.8f;
-    //const float CLOSE_POSITION_OFFSET = 0.4f;
-
     // Existing timing variables
     bool lastInputState = false;
     TimingResult lastTimingResult = TimingResult::None;
@@ -129,7 +125,7 @@ private:
     const float BAD_WINDOW = 0.35f;
 
     // Position constants
-    const float SEESAW_LENGTH = 12.0f;  // Doubled from original
+    const float SEESAW_LENGTH = 12.0f;
     const float FAR_POSITION_OFFSET = SEESAW_LENGTH * 0.4f;  // Far from center
     const float CLOSE_POSITION_OFFSET = SEESAW_LENGTH * 0.15f; // Much closer to center
     const float CHARACTER_BASE_HEIGHT = 0.4f;
@@ -145,7 +141,6 @@ private:
     // Existing helper functions
     void updateSeesawTilt(float dt);
     void updateCharacterPositions(float dt);
-    //vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& peakPos);
     vec3 calculateJumpPosition(float t, const vec3& startPos, const vec3& endPos, const vec3& peakPos);
 
     void initializePositions();

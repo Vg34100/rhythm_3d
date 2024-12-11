@@ -1,5 +1,5 @@
 #define MINIAUDIO_IMPLEMENTATION
-#define MA_API  // Define MA_API as empty for implementation
+#define MA_API
 
 #include "miniaudio.h"
 #include "WaveSound.h"

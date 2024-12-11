@@ -14,7 +14,7 @@ TambourineScene::TambourineScene()
     , currentNoteIndex(0)
     , sequenceStartTime(0)
     , currentTime(0)
-    , introStartTime(0)  // Initialize new variable
+    , introStartTime(0)
     , lastShakeState(false)
     , lastClapState(false)
     , showFeedbackCube(true)
@@ -24,42 +24,13 @@ TambourineScene::TambourineScene()
 }
 
 void TambourineScene::init() {
-    //// Initialize all visual objects immediately
-    //monkey = AnimationObject(AnimationObjectType::box);
-
     auto& lighting = GPU::Lighting::get();
 
     // Main spotlight from above (light 0)
     lighting.lights[0].position = vec4(0.0f, 0.0f, 0.0f, 1.0f);
     lighting.lights[0].direction = vec4(0.0f, 0.0f, 0.0f, 0.0f);
     lighting.lights[0].diffuse = vec4(10.5f, 10.5f, 10.5f, 1.0f);
-
-    //// Front fill light (light 1)
-    //lighting.lights[1].position = vec4(0.0f, 2.0f, 5.0f, 0.0f);
-    //lighting.lights[1].direction = vec4(0.0f, -0.5f, -1.0f, 0.0f);
-    //lighting.lights[1].diffuse = vec4(2.4f, 2.4f, 2.5f, 1.0f);
-
-    //// Side rim light (light 2)
-    //lighting.lights[2].position = vec4(-4.0f, 3.0f, 0.0f, 0.0f);
-    //lighting.lights[2].direction = vec4(1.0f, -0.2f, 0.0f, 0.0f);
-    //lighting.lights[2].diffuse = vec4(3.3f, 3.3f, 3.4f, 1.0f);
-
     lighting.update();
-
-    //// Set initial camera position
-    //auto& renderer = Application::get().renderer;
-    //renderer->camera.Position = vec3(-100.0f, 0.0f, 0.0f);  // Higher and further back
-    ////renderer->camera.Lookat = vec3(3.0f, 0.0f, -0.5f);
-    ////renderer->camera.FOV = 45.0f;  // Tighter FOV for better view
-    //renderer->camera.update();  // Important - need to call update after changing camera properties
-
-
-
-
-    //monkey.localPosition = vec3(-2.0f, 0.0f, 0.0f);
-    //monkey.localScale = vec3(1.0f);
-    //monkey.color = vec4(0.6f, 0.4f, 0.2f, 1.0f);
-    //monkey.updateMatrix(true);  // Important: Update matrices immediately
 
     // ==========================================
     // Add new model monkey
@@ -99,12 +70,6 @@ void TambourineScene::init() {
     playerModel.updateMatrix(true);
     // ==========================================
 
-
-    //monkeyTambourine = AnimationObject(AnimationObjectType::box);
-    //monkeyTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
-    //monkeyTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
-    //monkeyTambourine.updateMatrix(true);
-
     // Add new model tambourine
     monkeyTambourineModel = AnimationObject(AnimationObjectType::model);
     monkeyTambourineModel.meshName = "../assets/models/tambourine/tambourineModel.obj";
@@ -118,18 +83,7 @@ void TambourineScene::init() {
     monkeyTambourineModel.texture = reinterpret_cast<void*>(tambourineTexture->id);
     monkeyTambourineModel.localScale = vec3(1.0f);
     monkeyTambourineModel.updateMatrix(true);
-
-
-    //player = AnimationObject(AnimationObjectType::box);
-    //player.localPosition = vec3(2.0f, 0.0f, 0.0f);
-    //player.localScale = vec3(1.0f);
-    //player.color = vec4(1.0f);
-    //player.updateMatrix(true);
-
-    //playerTambourine = AnimationObject(AnimationObjectType::box);
-    //playerTambourine.localScale = vec3(0.8f, 0.1f, 0.8f);
-    //playerTambourine.color = vec4(0.8f, 0.7f, 0.6f, 1.0f);
-    //playerTambourine.updateMatrix(true);
+    // ==========================================
 
 
     // Add new model tambourine
@@ -159,13 +113,6 @@ void TambourineScene::init() {
     backgroundModel.texture = reinterpret_cast<void*>(backgroundModelTexture->id);
     backgroundModel.updateMatrix(true);
     // ===========================================================
-
-
-
-    //playerIndicator = AnimationObject(AnimationObjectType::box);
-    //playerIndicator.localScale = vec3(0.3f);
-    //playerIndicator.color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
-    //playerIndicator.updateMatrix(true);
 
     feedbackCube = AnimationObject(AnimationObjectType::box);
     feedbackCube.localPosition = vec3(0.0f, 2.0f, 0.0f);
@@ -253,13 +200,8 @@ void TambourineScene::update(double now, float dt) {
     }
 
     // Update matrices
-    //monkey.updateMatrix(true);
-    //monkeyTambourine.updateMatrix(true);
-    //player.updateMatrix(true);
-    //playerTambourine.updateMatrix(true);
-    //playerIndicator.updateMatrix(true);
     feedbackCube.updateMatrix(true);
-    timingIndicator.updateMatrix(true);  // Don't forget the new timing indicator!
+    timingIndicator.updateMatrix(true);
 }
 
 void TambourineScene::updateBeatVisuals(float dt) {
@@ -424,7 +366,6 @@ void TambourineScene::updateAnimations(float dt) {
         float t = monkeyAnim.animationTime / ANIM_DURATION;
         if (monkeyAnim.isShaking) {
             vec3 newPos = vec3(-0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
-            //monkeyTambourine.localPosition = newPos;
             monkeyTambourineModel.localPosition = newPos;
             monkeyTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
 
@@ -434,13 +375,11 @@ void TambourineScene::updateAnimations(float dt) {
         }
         else if (monkeyAnim.isClapping) {
             vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
-            //monkeyTambourine.localPosition = newPos;
             monkeyTambourineModel.localPosition = newPos;
         }
     }
     else {
         vec3 defaultPos = vec3(-0.8f, 0.0f, 0.0f);
-        //monkeyTambourine.localPosition = defaultPos;
         monkeyTambourineModel.localPosition = defaultPos;
         monkeyTambourineModel.localRotation = vec3(0.0f);
 
@@ -460,27 +399,19 @@ void TambourineScene::updateAnimations(float dt) {
         float t = playerAnim.animationTime / ANIM_DURATION;
         if (playerAnim.isShaking) {
             vec3 newPos = vec3(0.8f + 0.2f * sin(t * 12.0f), 0.0f, 0.0f);
-            //playerTambourine.localPosition = newPos;
             playerTambourineModel.localPosition = newPos;
             playerTambourineModel.localRotation = vec3(0.0f, 0.0f, 15.0f * sin(t * 12.0f));
         }
         else if (playerAnim.isClapping) {
             vec3 newPos = vec3(0.0f, 0.5f * (1.0f - t), 0.8f);
-            //playerTambourine.localPosition = newPos;
             playerTambourineModel.localPosition = newPos;
         }
     }
     else {
         vec3 defaultPos = vec3(0.8f, 0.0f, 0.0f);
-        //playerTambourine.localPosition = defaultPos;
         playerTambourineModel.localPosition = defaultPos;
         playerTambourineModel.localRotation = vec3(0.0f);
     }
-
-    // Update player indicator position
-    //playerIndicator.localPosition = vec3(playerModel.localPosition.x,
-    //    playerModel.localPosition.y + 3.5f,
-    //    playerModel.localPosition.z);
 
     // Don't forget to update matrices
     monkeyTambourineModel.updateMatrix(true);
@@ -556,43 +487,6 @@ TambourineScene::~TambourineScene() {
 void TambourineScene::renderMonkey(const mat4& projection, const mat4& view, bool isShadow) {
     auto& jr = AnimationObjectRenderer::get();
 
-    //// Render monkey
-    //jr.beginBatchRender(monkey.shapeType, false, vec4(1.f), isShadow);
-    //if (!isShadow) {
-    //    if (monkey.cullFace) {
-    //        glEnable(GL_CULL_FACE);
-    //        glCullFace(GL_BACK);
-    //    }
-    //    else {
-    //        glDisable(GL_CULL_FACE);
-    //    }
-    //}
-    //if (isShadow) {
-    //    glEnable(GL_CULL_FACE);
-    //    glCullFace(GL_FRONT);
-    //}
-    //jr.renderBatchWithOwnColor(monkey, isShadow);
-    //jr.endBatchRender(isShadow);
-
-    // Render monkey's tambourine
-    //jr.beginBatchRender(monkeyTambourine.shapeType, false, vec4(1.f), isShadow);
-    //if (!isShadow) {
-    //    if (monkeyTambourine.cullFace) {
-    //        glEnable(GL_CULL_FACE);
-    //        glCullFace(GL_BACK);
-    //    }
-    //    else {
-    //        glDisable(GL_CULL_FACE);
-    //    }
-    //}
-    //if (isShadow) {
-    //    glEnable(GL_CULL_FACE);
-    //    glCullFace(GL_FRONT);
-    //}
-    //jr.renderBatchWithOwnColor(monkeyTambourine, isShadow);
-    //jr.endBatchRender(isShadow);
-
-
     // Add rendering for model monkey
     jr.beginBatchRender(monkeyModel, false, vec4(1.f), isShadow);
     jr.renderBatchWithOwnColor(monkeyModel, isShadow);
@@ -607,60 +501,6 @@ void TambourineScene::renderMonkey(const mat4& projection, const mat4& view, boo
 
 void TambourineScene::renderPlayer(const mat4& projection, const mat4& view, bool isShadow) {
     auto& jr = AnimationObjectRenderer::get();
-
-    //// Render player
-    //jr.beginBatchRender(player.shapeType, false, vec4(1.f), isShadow);
-    //if (!isShadow) {
-    //    if (player.cullFace) {
-    //        glEnable(GL_CULL_FACE);
-    //        glCullFace(GL_BACK);
-    //    }
-    //    else {
-    //        glDisable(GL_CULL_FACE);
-    //    }
-    //}
-    //if (isShadow) {
-    //    glEnable(GL_CULL_FACE);
-    //    glCullFace(GL_FRONT);
-    //}
-    //jr.renderBatchWithOwnColor(player, isShadow);
-    //jr.endBatchRender(isShadow);
-
-    //// Render player's tambourine
-    //jr.beginBatchRender(playerTambourine.shapeType, false, vec4(1.f), isShadow);
-    //if (!isShadow) {
-    //    if (playerTambourine.cullFace) {
-    //        glEnable(GL_CULL_FACE);
-    //        glCullFace(GL_BACK);
-    //    }
-    //    else {
-    //        glDisable(GL_CULL_FACE);
-    //    }
-    //}
-    //if (isShadow) {
-    //    glEnable(GL_CULL_FACE);
-    //    glCullFace(GL_FRONT);
-    //}
-    //jr.renderBatchWithOwnColor(playerTambourine, isShadow);
-    //jr.endBatchRender(isShadow);
-
-    // Render player indicator
-    //jr.beginBatchRender(playerIndicator.shapeType, false, vec4(1.f), isShadow);
-    //if (!isShadow) {
-    //    if (playerIndicator.cullFace) {
-    //        glEnable(GL_CULL_FACE);
-    //        glCullFace(GL_BACK);
-    //    }
-    //    else {
-    //        glDisable(GL_CULL_FACE);
-    //    }
-    //}
-    //if (isShadow) {
-    //    glEnable(GL_CULL_FACE);
-    //    glCullFace(GL_FRONT);
-    //}
-    //jr.renderBatchWithOwnColor(playerIndicator, isShadow);
-    //jr.endBatchRender(isShadow);
 
     jr.beginBatchRender(playerModel, false, vec4(1.f), isShadow);
     jr.renderBatchWithOwnColor(playerModel, isShadow);

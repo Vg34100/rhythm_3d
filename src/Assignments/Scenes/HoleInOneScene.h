@@ -15,12 +15,9 @@ public:
 
 private:
     // Characters
-    AnimationObject player;      // Main player (white box)
-    AnimationObject golfClub;    // Player's golf club
-    AnimationObject monkey;      // Monkey character (brown box)
-    AnimationObject mandrill;    // Mandrill character (gray box)
-    AnimationObject island;      // Destination island
-    AnimationObject golfBall;    // The golf ball being thrown/hit
+    AnimationObject player;
+    AnimationObject golfClub;
+    AnimationObject golfBall;
 
 
     AnimationObject mandrillModel;  // HIO_Monkey.obj
@@ -70,9 +67,9 @@ private:
     const float BALL_FLIGHT_HEIGHT = 5.0f;       // Height of ball flight to island
 
     // Input timing windows (in seconds)
-    const float PERFECT_WINDOW = 0.05f;  // �0.05s for perfect
-    const float GOOD_WINDOW = 0.15f;      // �0.1s for good
-    const float BAD_WINDOW = 0.25f;       // �0.2s for bad, beyond is miss
+    const float PERFECT_WINDOW = 0.05f;
+    const float GOOD_WINDOW = 0.15f;
+    const float BAD_WINDOW = 0.25f;
     bool soundPlayed = false;
 
     GameState currentState;
@@ -84,10 +81,10 @@ private:
     vec3 ballEndPos;
 
     // Animation variables
-    float golfClubAngle;        // Current angle of the golf club
-    bool swingInProgress;       // Whether a swing is currently happening
-    float swingProgress;        // Progress of current swing (0 to 1)
-    bool hasInputThisTurn;      // Track if player has input during current turn
+    float golfClubAngle;
+    bool swingInProgress;
+    float swingProgress;
+    bool hasInputThisTurn;
 
     bool validHit;
     TimingResult lastHitResult;
@@ -102,10 +99,10 @@ private:
     void updateGolfClub(float dt);
     vec3 calculateArcPosition(const vec3& start, const vec3& end, float height, float t);
     void startNewPattern();
-    vec3 getThrowPosition(bool isMandrill) const;  // Gets position in front of thrower
-    vec3 getPlayerHitPosition() const;             // Gets position where player should hit ball
-    void handlePlayerInput();                      // New method for input handling
-    TimingResult checkTiming(float stateTime);     // New method for checking input timing
+    vec3 getThrowPosition(bool isMandrill) const;
+    vec3 getPlayerHitPosition() const;
+    void handlePlayerInput();
+    TimingResult checkTiming(float stateTime);
     void updateFeedbackCube(TimingResult result);
 
 };

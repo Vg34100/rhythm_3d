@@ -25,13 +25,8 @@ public:
 
 private:
     // Visual objects
-    // AnimationObject monkey;
-    //AnimationObject monkeyTambourine;
-    //AnimationObject player;
-    //AnimationObject playerTambourine;
-    //AnimationObject playerIndicator;
     AnimationObject feedbackCube;
-    AnimationObject timingIndicator; // New: shows current beat position
+    AnimationObject timingIndicator;
 
 
     AnimationObject monkeyTambourineModel;
@@ -45,7 +40,7 @@ private:
 
     // Game state
     enum class GameState {
-        Intro,       // New: show instructions
+        Intro,
         MonkeyTurn,
         PlayerTurn,
         Evaluation
@@ -58,14 +53,14 @@ private:
     size_t currentNoteIndex;
 
     // Timing
-    const float BPM = 120.0f;  // Slower default tempo
+    const float BPM = 120.0f;
     const float BEAT_DURATION = 60.0f / BPM;
-    const float TIMING_TOLERANCE = 0.4f; // More forgiving timing window
+    const float TIMING_TOLERANCE = 0.4f;
     float sequenceStartTime;
     float currentTime;
 
     const float INTRO_DURATION = 2.0f;  // Duration of intro in seconds
-    const float TRANSITION_DURATION = BEAT_DURATION;  // One full beat for transition
+    const float TRANSITION_DURATION = BEAT_DURATION;
     float introStartTime;  // Track when intro began
 
     // Visual feedback
